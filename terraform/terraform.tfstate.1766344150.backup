@@ -1,0 +1,1119 @@
+{
+  "version": 4,
+  "terraform_version": "1.5.7",
+  "serial": 87,
+  "lineage": "bad6c905-7638-6ce2-ab7c-38006e3483fa",
+  "outputs": {},
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "google_cloud_run_service",
+      "name": "api",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": []
+    },
+    {
+      "mode": "managed",
+      "type": "google_cloud_run_service",
+      "name": "worker",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": []
+    },
+    {
+      "mode": "managed",
+      "type": "google_compute_backend_service",
+      "name": "default",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "affinity_cookie_ttl_sec": 0,
+            "backend": [
+              {
+                "balancing_mode": "UTILIZATION",
+                "capacity_scaler": 1,
+                "custom_metrics": [],
+                "description": "",
+                "group": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/regions/asia-south1/networkEndpointGroups/compliancedesk-neg",
+                "max_connections": 0,
+                "max_connections_per_endpoint": 0,
+                "max_connections_per_instance": 0,
+                "max_rate": 0,
+                "max_rate_per_endpoint": 0,
+                "max_rate_per_instance": 0,
+                "max_utilization": 0,
+                "preference": ""
+              }
+            ],
+            "cdn_policy": [],
+            "circuit_breakers": [],
+            "compression_mode": "",
+            "connection_draining_timeout_sec": 300,
+            "consistent_hash": [],
+            "creation_timestamp": "2025-12-21T11:02:06.217-08:00",
+            "custom_metrics": [],
+            "custom_request_headers": [],
+            "custom_response_headers": [],
+            "description": "",
+            "edge_security_policy": "",
+            "enable_cdn": false,
+            "external_managed_migration_state": "",
+            "external_managed_migration_testing_percentage": 0,
+            "fingerprint": "t_6Cnii0uiE=",
+            "generated_id": 492978307825269441,
+            "health_checks": [],
+            "iap": [],
+            "id": "projects/compliance-desk-antigravity/global/backendServices/compliancedesk-backend",
+            "ip_address_selection_policy": "",
+            "load_balancing_scheme": "EXTERNAL",
+            "locality_lb_policies": [],
+            "locality_lb_policy": "",
+            "log_config": [],
+            "max_stream_duration": [],
+            "name": "compliancedesk-backend",
+            "outlier_detection": [],
+            "params": [],
+            "port_name": "http",
+            "project": "compliance-desk-antigravity",
+            "protocol": "HTTPS",
+            "security_policy": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/securityPolicies/compliancedesk-security-policy",
+            "security_settings": [],
+            "self_link": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/backendServices/compliancedesk-backend",
+            "service_lb_policy": "",
+            "session_affinity": "NONE",
+            "strong_session_affinity_cookie": [],
+            "timeout_sec": 30,
+            "timeouts": null,
+            "tls_settings": []
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9",
+          "dependencies": [
+            "google_compute_region_network_endpoint_group.serverless_neg",
+            "google_compute_security_policy.policy"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_compute_firewall",
+      "name": "allow_internal_app",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "allow": [
+              {
+                "ports": [],
+                "protocol": "icmp"
+              },
+              {
+                "ports": [],
+                "protocol": "tcp"
+              },
+              {
+                "ports": [],
+                "protocol": "udp"
+              }
+            ],
+            "creation_timestamp": "2025-12-21T10:40:48.752-08:00",
+            "deny": [],
+            "description": "",
+            "destination_ranges": [],
+            "direction": "INGRESS",
+            "disabled": false,
+            "enable_logging": null,
+            "id": "projects/compliance-desk-antigravity/global/firewalls/allow-internal-app",
+            "log_config": [],
+            "name": "allow-internal-app",
+            "network": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/networks/compliancedesk-prod-vpc",
+            "params": [],
+            "priority": 1000,
+            "project": "compliance-desk-antigravity",
+            "self_link": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/firewalls/allow-internal-app",
+            "source_ranges": [
+              "10.0.2.0/24"
+            ],
+            "source_service_accounts": [],
+            "source_tags": [],
+            "target_service_accounts": [],
+            "target_tags": [],
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9",
+          "dependencies": [
+            "google_compute_network.vpc"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_compute_firewall",
+      "name": "allow_internal_data",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "allow": [
+              {
+                "ports": [
+                  "5432",
+                  "6379"
+                ],
+                "protocol": "tcp"
+              }
+            ],
+            "creation_timestamp": "2025-12-21T10:40:48.676-08:00",
+            "deny": [],
+            "description": "",
+            "destination_ranges": [],
+            "direction": "INGRESS",
+            "disabled": false,
+            "enable_logging": null,
+            "id": "projects/compliance-desk-antigravity/global/firewalls/allow-internal-data",
+            "log_config": [],
+            "name": "allow-internal-data",
+            "network": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/networks/compliancedesk-prod-vpc",
+            "params": [],
+            "priority": 1000,
+            "project": "compliance-desk-antigravity",
+            "self_link": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/firewalls/allow-internal-data",
+            "source_ranges": [
+              "10.0.2.0/24"
+            ],
+            "source_service_accounts": [],
+            "source_tags": [],
+            "target_service_accounts": [],
+            "target_tags": [
+              "data-layer"
+            ],
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9",
+          "dependencies": [
+            "google_compute_network.vpc"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_compute_firewall",
+      "name": "deny_all",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "allow": [],
+            "creation_timestamp": "2025-12-21T10:40:48.785-08:00",
+            "deny": [
+              {
+                "ports": [],
+                "protocol": "all"
+              }
+            ],
+            "description": "",
+            "destination_ranges": [],
+            "direction": "INGRESS",
+            "disabled": false,
+            "enable_logging": null,
+            "id": "projects/compliance-desk-antigravity/global/firewalls/deny-all-ingress",
+            "log_config": [],
+            "name": "deny-all-ingress",
+            "network": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/networks/compliancedesk-prod-vpc",
+            "params": [],
+            "priority": 65534,
+            "project": "compliance-desk-antigravity",
+            "self_link": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/firewalls/deny-all-ingress",
+            "source_ranges": [
+              "0.0.0.0/0"
+            ],
+            "source_service_accounts": [],
+            "source_tags": [],
+            "target_service_accounts": [],
+            "target_tags": [],
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9",
+          "dependencies": [
+            "google_compute_network.vpc"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_compute_global_address",
+      "name": "default",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "address": "34.54.92.124",
+            "address_type": "EXTERNAL",
+            "creation_timestamp": "2025-12-21T10:40:25.716-08:00",
+            "description": "",
+            "effective_labels": {
+              "goog-terraform-provisioned": "true"
+            },
+            "id": "projects/compliance-desk-antigravity/global/addresses/compliancedesk-ip",
+            "ip_version": "",
+            "label_fingerprint": "vezUS-42LLM=",
+            "labels": {},
+            "name": "compliancedesk-ip",
+            "network": "",
+            "prefix_length": 0,
+            "project": "compliance-desk-antigravity",
+            "purpose": "",
+            "self_link": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/addresses/compliancedesk-ip",
+            "terraform_labels": {
+              "goog-terraform-provisioned": "true"
+            },
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19"
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_compute_global_address",
+      "name": "private_ip_alloc",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "address": "10.169.0.0",
+            "address_type": "INTERNAL",
+            "creation_timestamp": "2025-12-21T10:40:48.794-08:00",
+            "description": "",
+            "effective_labels": {
+              "goog-terraform-provisioned": "true"
+            },
+            "id": "projects/compliance-desk-antigravity/global/addresses/private-ip-alloc",
+            "ip_version": "",
+            "label_fingerprint": "vezUS-42LLM=",
+            "labels": {},
+            "name": "private-ip-alloc",
+            "network": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/networks/compliancedesk-prod-vpc",
+            "prefix_length": 16,
+            "project": "compliance-desk-antigravity",
+            "purpose": "VPC_PEERING",
+            "self_link": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/addresses/private-ip-alloc",
+            "terraform_labels": {
+              "goog-terraform-provisioned": "true"
+            },
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "google_compute_network.vpc"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_compute_global_forwarding_rule",
+      "name": "default",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "base_forwarding_rule": "",
+            "description": "",
+            "effective_labels": {},
+            "external_managed_backend_bucket_migration_state": "",
+            "external_managed_backend_bucket_migration_testing_percentage": 0,
+            "forwarding_rule_id": 382550257648925284,
+            "id": "projects/compliance-desk-antigravity/global/forwardingRules/compliancedesk-forwarding-rule",
+            "ip_address": "34.54.92.124",
+            "ip_protocol": "TCP",
+            "ip_version": "",
+            "label_fingerprint": "42WmSpB8rSM=",
+            "labels": {},
+            "load_balancing_scheme": "EXTERNAL",
+            "metadata_filters": [],
+            "name": "compliancedesk-forwarding-rule",
+            "network": "",
+            "network_tier": "PREMIUM",
+            "no_automate_dns_zone": null,
+            "port_range": "443-443",
+            "project": "compliance-desk-antigravity",
+            "psc_connection_id": "",
+            "psc_connection_status": "",
+            "self_link": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/forwardingRules/compliancedesk-forwarding-rule",
+            "service_directory_registrations": [],
+            "source_ip_ranges": [],
+            "subnetwork": "",
+            "target": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/targetHttpsProxies/compliancedesk-https-proxy",
+            "terraform_labels": {},
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "google_compute_backend_service.default",
+            "google_compute_global_address.default",
+            "google_compute_managed_ssl_certificate.default",
+            "google_compute_region_network_endpoint_group.serverless_neg",
+            "google_compute_security_policy.policy",
+            "google_compute_target_https_proxy.default",
+            "google_compute_url_map.default"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_compute_managed_ssl_certificate",
+      "name": "default",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "certificate_id": 8910179090525684214,
+            "creation_timestamp": "2025-12-21T10:40:25.692-08:00",
+            "description": "",
+            "expire_time": "",
+            "id": "projects/compliance-desk-antigravity/global/sslCertificates/compliancedesk-cert",
+            "managed": [
+              {
+                "domains": [
+                  "api.compliancedesk.ai"
+                ]
+              }
+            ],
+            "name": "compliancedesk-cert",
+            "project": "compliance-desk-antigravity",
+            "self_link": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/sslCertificates/compliancedesk-cert",
+            "subject_alternative_names": [],
+            "timeouts": null,
+            "type": "MANAGED"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDB9fQ=="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_compute_network",
+      "name": "vpc",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "auto_create_subnetworks": false,
+            "bgp_always_compare_med": false,
+            "bgp_best_path_selection_mode": "LEGACY",
+            "bgp_inter_region_cost": "",
+            "delete_bgp_always_compare_med": false,
+            "delete_default_routes_on_create": false,
+            "description": "",
+            "enable_ula_internal_ipv6": false,
+            "gateway_ipv4": "",
+            "id": "projects/compliance-desk-antigravity/global/networks/compliancedesk-prod-vpc",
+            "internal_ipv6_range": "",
+            "mtu": 0,
+            "name": "compliancedesk-prod-vpc",
+            "network_firewall_policy_enforcement_order": "AFTER_CLASSIC_FIREWALL",
+            "network_id": "8032589479495959030",
+            "network_profile": "",
+            "numeric_id": "8032589479495959030",
+            "params": [],
+            "project": "compliance-desk-antigravity",
+            "routing_mode": "REGIONAL",
+            "self_link": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/networks/compliancedesk-prod-vpc",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19"
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_compute_region_network_endpoint_group",
+      "name": "serverless_neg",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "app_engine": [],
+            "cloud_function": [],
+            "cloud_run": [
+              {
+                "service": "api",
+                "tag": "",
+                "url_mask": ""
+              }
+            ],
+            "description": "",
+            "id": "projects/compliance-desk-antigravity/regions/asia-south1/networkEndpointGroups/compliancedesk-neg",
+            "name": "compliancedesk-neg",
+            "network": "",
+            "network_endpoint_type": "SERVERLESS",
+            "project": "compliance-desk-antigravity",
+            "psc_data": [],
+            "psc_target_service": "",
+            "region": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/regions/asia-south1",
+            "self_link": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/regions/asia-south1/networkEndpointGroups/compliancedesk-neg",
+            "subnetwork": "",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDB9fQ=="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_compute_security_policy",
+      "name": "policy",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "adaptive_protection_config": [],
+            "advanced_options_config": [],
+            "description": "",
+            "effective_labels": {
+              "goog-terraform-provisioned": "true"
+            },
+            "fingerprint": "q7RsCB8Rq2k=",
+            "id": "projects/compliance-desk-antigravity/global/securityPolicies/compliancedesk-security-policy",
+            "label_fingerprint": "vezUS-42LLM=",
+            "labels": {},
+            "name": "compliancedesk-security-policy",
+            "project": "compliance-desk-antigravity",
+            "recaptcha_options_config": [],
+            "rule": [
+              {
+                "action": "allow",
+                "description": "Default rule - allow all remaining traffic",
+                "header_action": [],
+                "match": [
+                  {
+                    "config": [
+                      {
+                        "src_ip_ranges": [
+                          "*"
+                        ]
+                      }
+                    ],
+                    "expr": [],
+                    "expr_options": [],
+                    "versioned_expr": "SRC_IPS_V1"
+                  }
+                ],
+                "preconfigured_waf_config": [],
+                "preview": false,
+                "priority": 2147483647,
+                "rate_limit_options": [],
+                "redirect_options": []
+              },
+              {
+                "action": "deny(403)",
+                "description": "Mandatory: Deny traffic from non-India IPs",
+                "header_action": [],
+                "match": [
+                  {
+                    "config": [],
+                    "expr": [
+                      {
+                        "expression": "origin.region_code != 'IN'"
+                      }
+                    ],
+                    "expr_options": [],
+                    "versioned_expr": ""
+                  }
+                ],
+                "preconfigured_waf_config": [],
+                "preview": false,
+                "priority": 900,
+                "rate_limit_options": [],
+                "redirect_options": []
+              },
+              {
+                "action": "deny(403)",
+                "description": "OWASP CRS protection for XSS and SQLi",
+                "header_action": [],
+                "match": [
+                  {
+                    "config": [],
+                    "expr": [
+                      {
+                        "expression": "evaluatePreconfiguredExpr('xss-v33-stable') || evaluatePreconfiguredExpr('sqli-v33-stable')"
+                      }
+                    ],
+                    "expr_options": [],
+                    "versioned_expr": ""
+                  }
+                ],
+                "preconfigured_waf_config": [],
+                "preview": false,
+                "priority": 3000,
+                "rate_limit_options": [],
+                "redirect_options": []
+              },
+              {
+                "action": "rate_based_ban",
+                "description": "Rate limit: 100 requests per minute",
+                "header_action": [],
+                "match": [
+                  {
+                    "config": [
+                      {
+                        "src_ip_ranges": [
+                          "*"
+                        ]
+                      }
+                    ],
+                    "expr": [],
+                    "expr_options": [],
+                    "versioned_expr": "SRC_IPS_V1"
+                  }
+                ],
+                "preconfigured_waf_config": [],
+                "preview": false,
+                "priority": 2000,
+                "rate_limit_options": [
+                  {
+                    "ban_duration_sec": 600,
+                    "ban_threshold": [],
+                    "conform_action": "allow",
+                    "enforce_on_key": "IP",
+                    "enforce_on_key_configs": [],
+                    "enforce_on_key_name": "",
+                    "exceed_action": "deny(429)",
+                    "exceed_redirect_options": [],
+                    "rate_limit_threshold": [
+                      {
+                        "count": 100,
+                        "interval_sec": 60
+                      }
+                    ]
+                  }
+                ],
+                "redirect_options": []
+              }
+            ],
+            "self_link": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/securityPolicies/compliancedesk-security-policy",
+            "terraform_labels": {
+              "goog-terraform-provisioned": "true"
+            },
+            "timeouts": null,
+            "type": "CLOUD_ARMOR"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjE4MDAwMDAwMDAwMDAsInVwZGF0ZSI6MTgwMDAwMDAwMDAwMH19"
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_compute_subnetwork",
+      "name": "private_app",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "creation_timestamp": "2025-12-21T10:40:49.760-08:00",
+            "description": "",
+            "external_ipv6_prefix": "",
+            "fingerprint": null,
+            "gateway_address": "10.0.2.1",
+            "id": "projects/compliance-desk-antigravity/regions/asia-south1/subnetworks/private-app",
+            "internal_ipv6_prefix": "",
+            "ip_cidr_range": "10.0.2.0/24",
+            "ip_collection": null,
+            "ipv6_access_type": "",
+            "ipv6_cidr_range": "",
+            "ipv6_gce_endpoint": "",
+            "log_config": [],
+            "name": "private-app",
+            "network": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/networks/compliancedesk-prod-vpc",
+            "params": [],
+            "private_ip_google_access": false,
+            "private_ipv6_google_access": "DISABLE_GOOGLE_ACCESS",
+            "project": "compliance-desk-antigravity",
+            "purpose": "PRIVATE",
+            "region": "asia-south1",
+            "reserved_internal_range": "",
+            "role": "",
+            "secondary_ip_range": [],
+            "self_link": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/regions/asia-south1/subnetworks/private-app",
+            "send_secondary_ip_range_if_empty": null,
+            "stack_type": "IPV4_ONLY",
+            "state": "",
+            "subnetwork_id": 7696497460971405790,
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "google_compute_network.vpc"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_compute_subnetwork",
+      "name": "private_data",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "creation_timestamp": "2025-12-21T10:40:51.121-08:00",
+            "description": "",
+            "external_ipv6_prefix": "",
+            "fingerprint": null,
+            "gateway_address": "10.0.3.1",
+            "id": "projects/compliance-desk-antigravity/regions/asia-south1/subnetworks/private-data",
+            "internal_ipv6_prefix": "",
+            "ip_cidr_range": "10.0.3.0/24",
+            "ip_collection": null,
+            "ipv6_access_type": "",
+            "ipv6_cidr_range": "",
+            "ipv6_gce_endpoint": "",
+            "log_config": [],
+            "name": "private-data",
+            "network": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/networks/compliancedesk-prod-vpc",
+            "params": [],
+            "private_ip_google_access": true,
+            "private_ipv6_google_access": "DISABLE_GOOGLE_ACCESS",
+            "project": "compliance-desk-antigravity",
+            "purpose": "PRIVATE",
+            "region": "asia-south1",
+            "reserved_internal_range": "",
+            "role": "",
+            "secondary_ip_range": [],
+            "self_link": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/regions/asia-south1/subnetworks/private-data",
+            "send_secondary_ip_range_if_empty": null,
+            "stack_type": "IPV4_ONLY",
+            "state": "",
+            "subnetwork_id": 3700645250971566556,
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "google_compute_network.vpc"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_compute_subnetwork",
+      "name": "public_ingress",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "creation_timestamp": "2025-12-21T10:40:49.990-08:00",
+            "description": "",
+            "external_ipv6_prefix": "",
+            "fingerprint": null,
+            "gateway_address": "10.0.1.1",
+            "id": "projects/compliance-desk-antigravity/regions/asia-south1/subnetworks/public-ingress",
+            "internal_ipv6_prefix": "",
+            "ip_cidr_range": "10.0.1.0/24",
+            "ip_collection": null,
+            "ipv6_access_type": "",
+            "ipv6_cidr_range": "",
+            "ipv6_gce_endpoint": "",
+            "log_config": [],
+            "name": "public-ingress",
+            "network": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/networks/compliancedesk-prod-vpc",
+            "params": [],
+            "private_ip_google_access": false,
+            "private_ipv6_google_access": "DISABLE_GOOGLE_ACCESS",
+            "project": "compliance-desk-antigravity",
+            "purpose": "PRIVATE",
+            "region": "asia-south1",
+            "reserved_internal_range": "",
+            "role": "",
+            "secondary_ip_range": [],
+            "self_link": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/regions/asia-south1/subnetworks/public-ingress",
+            "send_secondary_ip_range_if_empty": null,
+            "stack_type": "IPV4_ONLY",
+            "state": "",
+            "subnetwork_id": 1642675271245332958,
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "google_compute_network.vpc"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_compute_target_https_proxy",
+      "name": "default",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "certificate_manager_certificates": [],
+            "certificate_map": "",
+            "creation_timestamp": "2025-12-21T11:03:27.136-08:00",
+            "description": "",
+            "fingerprint": "Y1sWbuEgq3Q=",
+            "http_keep_alive_timeout_sec": 0,
+            "id": "projects/compliance-desk-antigravity/global/targetHttpsProxies/compliancedesk-https-proxy",
+            "name": "compliancedesk-https-proxy",
+            "project": "compliance-desk-antigravity",
+            "proxy_bind": false,
+            "proxy_id": 8752365997612464784,
+            "quic_override": "NONE",
+            "self_link": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/targetHttpsProxies/compliancedesk-https-proxy",
+            "server_tls_policy": "",
+            "ssl_certificates": [
+              "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/sslCertificates/compliancedesk-cert"
+            ],
+            "ssl_policy": "",
+            "timeouts": null,
+            "tls_early_data": "DISABLED",
+            "url_map": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/urlMaps/compliancedesk-url-map"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "google_compute_backend_service.default",
+            "google_compute_managed_ssl_certificate.default",
+            "google_compute_region_network_endpoint_group.serverless_neg",
+            "google_compute_security_policy.policy",
+            "google_compute_url_map.default"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_compute_url_map",
+      "name": "default",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "creation_timestamp": "2025-12-21T11:03:14.249-08:00",
+            "default_custom_error_response_policy": [],
+            "default_route_action": [],
+            "default_service": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/backendServices/compliancedesk-backend",
+            "default_url_redirect": [],
+            "description": "",
+            "fingerprint": "R1nZ-G68Pos=",
+            "header_action": [],
+            "host_rule": [],
+            "id": "projects/compliance-desk-antigravity/global/urlMaps/compliancedesk-url-map",
+            "map_id": 7345720902017219229,
+            "name": "compliancedesk-url-map",
+            "path_matcher": [],
+            "project": "compliance-desk-antigravity",
+            "self_link": "https://www.googleapis.com/compute/v1/projects/compliance-desk-antigravity/global/urlMaps/compliancedesk-url-map",
+            "test": [],
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "google_compute_backend_service.default",
+            "google_compute_region_network_endpoint_group.serverless_neg",
+            "google_compute_security_policy.policy"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_secret_manager_secret",
+      "name": "protean_api_key",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "annotations": {},
+            "create_time": "2025-12-21T18:40:25.623342Z",
+            "deletion_protection": false,
+            "effective_annotations": {},
+            "effective_labels": {
+              "goog-terraform-provisioned": "true"
+            },
+            "expire_time": "",
+            "id": "projects/compliance-desk-antigravity/secrets/PROTEAN_PROD_API_KEY",
+            "labels": {},
+            "name": "projects/715298833124/secrets/PROTEAN_PROD_API_KEY",
+            "project": "compliance-desk-antigravity",
+            "replication": [
+              {
+                "auto": [
+                  {
+                    "customer_managed_encryption": []
+                  }
+                ],
+                "user_managed": []
+              }
+            ],
+            "rotation": [],
+            "secret_id": "PROTEAN_PROD_API_KEY",
+            "tags": null,
+            "terraform_labels": {
+              "goog-terraform-provisioned": "true"
+            },
+            "timeouts": null,
+            "topics": [],
+            "ttl": null,
+            "version_aliases": {},
+            "version_destroy_ttl": ""
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19"
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_secret_manager_secret",
+      "name": "uidai_cert",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "annotations": {},
+            "create_time": "2025-12-21T18:40:25.613419Z",
+            "deletion_protection": false,
+            "effective_annotations": {},
+            "effective_labels": {
+              "goog-terraform-provisioned": "true"
+            },
+            "expire_time": "",
+            "id": "projects/compliance-desk-antigravity/secrets/UIDAI_CERTIFICATE_P12",
+            "labels": {},
+            "name": "projects/715298833124/secrets/UIDAI_CERTIFICATE_P12",
+            "project": "compliance-desk-antigravity",
+            "replication": [
+              {
+                "auto": [
+                  {
+                    "customer_managed_encryption": []
+                  }
+                ],
+                "user_managed": []
+              }
+            ],
+            "rotation": [],
+            "secret_id": "UIDAI_CERTIFICATE_P12",
+            "tags": null,
+            "terraform_labels": {
+              "goog-terraform-provisioned": "true"
+            },
+            "timeouts": null,
+            "topics": [],
+            "ttl": null,
+            "version_aliases": {},
+            "version_destroy_ttl": ""
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19"
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_secret_manager_secret",
+      "name": "whatsapp_token",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "annotations": {},
+            "create_time": "2025-12-21T18:40:25.613461Z",
+            "deletion_protection": false,
+            "effective_annotations": {},
+            "effective_labels": {
+              "goog-terraform-provisioned": "true"
+            },
+            "expire_time": "",
+            "id": "projects/compliance-desk-antigravity/secrets/WHATSAPP_PROD_TOKEN",
+            "labels": {},
+            "name": "projects/715298833124/secrets/WHATSAPP_PROD_TOKEN",
+            "project": "compliance-desk-antigravity",
+            "replication": [
+              {
+                "auto": [
+                  {
+                    "customer_managed_encryption": []
+                  }
+                ],
+                "user_managed": []
+              }
+            ],
+            "rotation": [],
+            "secret_id": "WHATSAPP_PROD_TOKEN",
+            "tags": null,
+            "terraform_labels": {
+              "goog-terraform-provisioned": "true"
+            },
+            "timeouts": null,
+            "topics": [],
+            "ttl": null,
+            "version_aliases": {},
+            "version_destroy_ttl": ""
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19"
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_secret_manager_secret_version",
+      "name": "protean_default",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "create_time": "2025-12-21T18:40:34.765481Z",
+            "deletion_policy": "DELETE",
+            "destroy_time": "",
+            "enabled": true,
+            "id": "projects/715298833124/secrets/PROTEAN_PROD_API_KEY/versions/1",
+            "is_secret_data_base64": false,
+            "name": "projects/715298833124/secrets/PROTEAN_PROD_API_KEY/versions/1",
+            "project": null,
+            "secret": "projects/compliance-desk-antigravity/secrets/PROTEAN_PROD_API_KEY",
+            "secret_data": "dummy-protean-key-change-me",
+            "secret_data_wo": null,
+            "secret_data_wo_version": 0,
+            "timeouts": null,
+            "version": "1"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "google_secret_manager_secret.protean_api_key"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_secret_manager_secret_version",
+      "name": "uidai_default",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "create_time": "2025-12-21T18:40:32.157139Z",
+            "deletion_policy": "DELETE",
+            "destroy_time": "",
+            "enabled": true,
+            "id": "projects/715298833124/secrets/UIDAI_CERTIFICATE_P12/versions/1",
+            "is_secret_data_base64": false,
+            "name": "projects/715298833124/secrets/UIDAI_CERTIFICATE_P12/versions/1",
+            "project": null,
+            "secret": "projects/compliance-desk-antigravity/secrets/UIDAI_CERTIFICATE_P12",
+            "secret_data": "ZHVtbXktcDEyLWNvbnRlbnQ=",
+            "secret_data_wo": null,
+            "secret_data_wo_version": 0,
+            "timeouts": null,
+            "version": "1"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "google_secret_manager_secret.uidai_cert"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_secret_manager_secret_version",
+      "name": "whatsapp_default",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "create_time": "2025-12-21T18:40:34.426613Z",
+            "deletion_policy": "DELETE",
+            "destroy_time": "",
+            "enabled": true,
+            "id": "projects/715298833124/secrets/WHATSAPP_PROD_TOKEN/versions/1",
+            "is_secret_data_base64": false,
+            "name": "projects/715298833124/secrets/WHATSAPP_PROD_TOKEN/versions/1",
+            "project": null,
+            "secret": "projects/compliance-desk-antigravity/secrets/WHATSAPP_PROD_TOKEN",
+            "secret_data": "dummy-whatsapp-token-change-me",
+            "secret_data_wo": null,
+            "secret_data_wo_version": 0,
+            "timeouts": null,
+            "version": "1"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "google_secret_manager_secret.whatsapp_token"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "google_sql_database",
+      "name": "database",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": []
+    },
+    {
+      "mode": "managed",
+      "type": "google_sql_database_instance",
+      "name": "master",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": []
+    },
+    {
+      "mode": "managed",
+      "type": "google_sql_user",
+      "name": "users",
+      "provider": "provider[\"registry.terraform.io/hashicorp/google\"]",
+      "instances": []
+    }
+  ],
+  "check_results": null
+}

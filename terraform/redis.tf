@@ -19,18 +19,19 @@ resource "google_redis_instance" "cache" {
 }
 
 # NOTE: Real-world VPC Peering for Redis needs 'google_compute_global_address' and 'google_service_networking_connection'
-# Adding them here for completeness of "Enterprise" standard.
+# Commented out for initial deployment - requires Service Networking API and peering setup.
+# Can be re-enabled after: gcloud services enable servicenetworking.googleapis.com
 
-resource "google_compute_global_address" "private_ip_alloc" {
-  name          = "private-ip-alloc"
-  purpose       = "VPC_PEERING"
-  address_type  = "INTERNAL"
-  prefix_length = 16
-  network       = google_compute_network.vpc.id
-}
+# resource "google_compute_global_address" "private_ip_alloc" {
+#   name          = "private-ip-alloc"
+#   purpose       = "VPC_PEERING"
+#   address_type  = "INTERNAL"
+#   prefix_length = 16
+#   network       = google_compute_network.vpc.id
+# }
 
-resource "google_service_networking_connection" "private_vpc_connection" {
-  network                 = google_compute_network.vpc.id
-  service                 = "servicenetworking.googleapis.com"
-  reserved_peering_ranges = [google_compute_global_address.private_ip_alloc.name]
-}
+# resource "google_service_networking_connection" "private_vpc_connection" {
+#   network                 = google_compute_network.vpc.id
+#   service                 = "servicenetworking.googleapis.com"
+#   reserved_peering_ranges = [google_compute_global_address.private_ip_alloc.name]
+# }

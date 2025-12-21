@@ -40,15 +40,15 @@ resource "google_secret_manager_secret_version" "uidai_default" {
 }
 
 # IAM Binding to allow Cloud Run to access secrets
-# (Assuming Cloud Run uses the default Compute Service Account for now)
-resource "google_secret_manager_secret_iam_member" "api_access_protean" {
-  secret_id = google_secret_manager_secret.protean_api_key.id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${var.project_id}@appspot.gserviceaccount.com" # Adjust if using custom SA
-}
-
-resource "google_secret_manager_secret_iam_member" "api_access_whatsapp" {
-  secret_id = google_secret_manager_secret.whatsapp_token.id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${var.project_id}@appspot.gserviceaccount.com"
-}
+# NOTE: Commented out for initial deployment. Reconfigure with actual Cloud Run SA.
+# resource "google_secret_manager_secret_iam_member" "api_access_protean" {
+#   secret_id = google_secret_manager_secret.protean_api_key.id
+#   role      = "roles/secretmanager.secretAccessor"
+#   member    = "serviceAccount:${var.project_id}@appspot.gserviceaccount.com" # Adjust if using custom SA
+# }
+#
+# resource "google_secret_manager_secret_iam_member" "api_access_whatsapp" {
+#   secret_id = google_secret_manager_secret.whatsapp_token.id
+#   role      = "roles/secretmanager.secretAccessor"
+#   member    = "serviceAccount:${var.project_id}@appspot.gserviceaccount.com"
+# }

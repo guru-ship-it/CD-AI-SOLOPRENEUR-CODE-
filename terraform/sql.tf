@@ -3,22 +3,21 @@ resource "google_sql_database_instance" "master" {
   database_version = "POSTGRES_15"
   region           = var.region
 
-  depends_on = [google_service_networking_connection.private_vpc_connection]
+  # depends_on commented out - PSA peering not configured in this deployment
+  # depends_on = [google_service_networking_connection.private_vpc_connection]
 
   settings {
-    # Enterprise Plus (Sandbox/Enterprise/Enterprise Plus)
-    # Using Enterprise Plus as requested for Mission 3
-    tier = "db-perf-optimized-N-2" # Example Enterprise Plus machine type (Check availability)
-    # Note: "db-custom-..." types are standard. Enterprise Plus often uses specific editions.
-    # For Terraform, edition is set in settings.
+    # Using standard tier for initial deployment
+    tier = "db-f1-micro" # Smallest tier for demo
 
-    edition = "ENTERPRISE_PLUS"
+    # Enterprise Plus requires specific setup, using standard for now
+    # edition = "ENTERPRISE_PLUS"
 
-    availability_type = "REGIONAL" # High Availability
+    availability_type = "ZONAL" # Simplified for demo
 
     ip_configuration {
-      ipv4_enabled    = false
-      private_network = google_compute_network.vpc.id
+      ipv4_enabled    = true  # Enable public IP for demo
+      # private_network = google_compute_network.vpc.id # Requires PSA peering
     }
 
     backup_configuration {
@@ -27,7 +26,7 @@ resource "google_sql_database_instance" "master" {
       start_time                     = "02:00" # UTC
     }
 
-    disk_size = 100
+    disk_size = 10  # Smaller for demo
     disk_type = "PD_SSD"
   }
 
