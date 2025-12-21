@@ -19,4 +19,4 @@ cryptography
 pytest
 bandit
 playwright
-opencv-python-headless
+# opencv-python-headless
