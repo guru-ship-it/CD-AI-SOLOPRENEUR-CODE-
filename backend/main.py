@@ -155,7 +155,7 @@ async def whatsapp_webhook(payload: WhatsAppPayload):
         app_id = msg
         
         # Check Status
-        status_result = pvc_status_checker.check_status_sync(state_code, app_id)
+        status_result = await pvc_status_checker.check_status(state_code, app_id)
         
         response_text = f"👮‍♂️ Current Status for {app_id}:\n{status_result}"
         next_state = "START"
