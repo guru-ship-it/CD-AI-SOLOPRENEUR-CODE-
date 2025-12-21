@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+crash.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets & Local Config
+.env
+*.env
+terraform.tfvars
+secrets/
+
+# Binaries & Logs
+terraform.exe
+terraform.zip
+installed_packages.txt
+dummy_pdf_output.txt
+*.log
+
+# Antigravity/System
+.gemini/
