@@ -4,7 +4,7 @@
 resource "google_secret_manager_secret" "protean_api_key" {
   secret_id = "PROTEAN_PROD_API_KEY"
   replication {
-    automatic = true
+    auto {}
   }
 }
 
@@ -17,7 +17,7 @@ resource "google_secret_manager_secret_version" "protean_default" {
 resource "google_secret_manager_secret" "whatsapp_token" {
   secret_id = "WHATSAPP_PROD_TOKEN"
   replication {
-    automatic = true
+    auto {}
   }
 }
 
@@ -30,7 +30,7 @@ resource "google_secret_manager_secret_version" "whatsapp_default" {
 resource "google_secret_manager_secret" "uidai_cert" {
   secret_id = "UIDAI_CERTIFICATE_P12"
   replication {
-    automatic = true
+    auto {}
   }
 }
 

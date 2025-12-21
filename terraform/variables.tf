@@ -1,7 +1,7 @@
 variable "project_id" {
   description = "The GCP Project ID"
   type        = string
-  default     = "your-project-id" # Helper for validation, user overrides this
+  default     = "compliance-desk-antigravity" # Helper for validation, user overrides this
 }
 
 variable "region" {
