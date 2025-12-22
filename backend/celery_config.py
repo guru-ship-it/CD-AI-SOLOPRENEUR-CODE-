@@ -20,4 +20,6 @@ celery_app.conf.update(
     result_serializer="json",
     timezone="Asia/Kolkata",
     enable_utc=True,
+    task_always_eager=True,
+    task_eager_propagates=True,
 )

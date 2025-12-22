@@ -67,3 +67,21 @@ class Incident(Base):
     # 72-Hour Deadline
     report_deadline = Column(DateTime(timezone=True))
 
+class ActionApproval(Base):
+    __tablename__ = "action_approvals"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    action_type = Column(String, nullable=False) # e.g., "DELETE_TENANT", "EXPORT_DATA"
+    payload = Column(String, nullable=False) # JSON string of action details
+    
+    requester_id = Column(String, nullable=False)
+    approver_id = Column(String, nullable=True) # ID of admin who approved
+    
+    status = Column(String, default="PENDING") # PENDING, APPROVED, REJECTED
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    deadline = Column(DateTime(timezone=True)) # 1-hour expiry
+
+

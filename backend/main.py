@@ -64,6 +64,11 @@ class IncidentRequest(BaseModel):
     description: str
     tenant_name: str
 
+class ApprovalRequest(BaseModel):
+    action_type: str
+    payload: dict
+    requester: str
+
 class WhatsAppPayload(BaseModel):
     user_id: str
     message: str
@@ -356,6 +361,51 @@ async def get_task_status(task_id: str):
         "status": task_result.status,
         "result": task_result.result if task_result.ready() else None
     }
+
+@app.post("/approvals")
+async def create_approval(request: ApprovalRequest, db: AsyncSession = Depends(get_db)):
+    import json
+    deadline = datetime.now() + timedelta(hours=1)
+    
+    approval = ActionApproval(
+        action_type=request.action_type,
+        payload=json.dumps(request.payload),
+        requester_id=request.requester,
+        status="PENDING",
+        deadline=deadline
+    )
+    db.add(approval)
+    await db.commit()
+    await db.refresh(approval)
+    
+    print(f"👁️ FOUR-EYES ALERT: {request.requester} requested {request.action_type}. Awaiting second admin approval.")
+    return {"id": approval.id, "status": "PENDING", "message": "Approval Request Created"}
+
+@app.get("/approvals")
+async def list_approvals(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(ActionApproval).filter(ActionApproval.status == "PENDING"))
+    return result.scalars().all()
+
+@app.put("/approvals/{id}")
+async def process_approval(id: int, status: str, approver: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(ActionApproval).filter(ActionApproval.id == id))
+    approval = result.scalars().first()
+    
+    if not approval:
+        raise HTTPException(status_code=404, detail="Approval not found")
+    
+    if approval.requester_id == approver:
+        raise HTTPException(status_code=403, detail="Four-Eyes Violation: Requester cannot be the Approver")
+        
+    approval.status = status
+    approval.approver_id = approver
+    
+    await db.commit()
+    
+    if status == "APPROVED":
+        print(f"✅ ACTION AUTHORIZED: {approval.action_type} execution triggered by {approver}.")
+    
+    return {"id": id, "status": status}
 
 @app.get("/")
 async def root():
