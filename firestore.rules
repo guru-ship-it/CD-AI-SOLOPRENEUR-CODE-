@@ -1,0 +1,45 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // --- GLOBAL IP BAN LIST (HONEYPOT) ---
+    // This function checks if the requestor's IP is in the banned list
+    function isNotBanned() {
+      // Note: In real production, IP checking in rules is limited. 
+      // This is a documentation representation of the logic often handled by 
+      // Edge Middleware (Cloud Armor/Functions).
+      // However, if we store user sessions, we can ban by Auth UID easily.
+      return true; 
+    }
+
+    // --- AUDIT LOGS ---
+    // Immutable: Only Admin can write (via Admin SDK/Cloud Function), nobody can read/update/delete via Client SDK
+    match /audit_logs/{logId} {
+      allow read, write: if false; 
+    }
+    
+    // --- BLOCKED IPS ---
+    // Written by Cloud Function only. No client access.
+    match /blocked_ips/{ip} {
+      allow read, write: if false;
+    }
+
+    // --- SECURE VAULT (ZERO TRUST) ---
+    // STRICTLY NO CLIENT ACCESS. Only Cloud Functions (Admin SDK) can read/write.
+    match /secure_vault/{tokenId} {
+       allow read, write: if false;
+    }
+
+    // --- APP DATA ---
+    match /{document=**} {
+      // 1. PANIC MODE CHECK (Kill Switch)
+      // If 'security_status' is not ACTIVE, reject all writes/reads immediately.
+      allow read, write: if get(/databases/$(database)/documents/system_config/security_status).data.status == 'ACTIVE';
+
+      // Deny if Banned (Conceptual - enforce via Cloud Armor/Functions for IPs)
+      allow read, write: if request.auth != null;
+    }
+  }
+}

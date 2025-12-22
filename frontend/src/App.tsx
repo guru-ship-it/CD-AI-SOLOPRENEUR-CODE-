@@ -1,35 +1,39 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { LandingPage } from './pages/LandingPage';
+import { Dashboard } from './pages/Dashboard';
+import { TenantManager } from './pages/TenantManager';
+import { DashboardLayout } from './layouts/DashboardLayout';
+import { useSessionTimeout } from './hooks/useSessionTimeout';
+import { CookieConsent } from './components/ui/CookieConsent';
+
+// Wrapper component to use the hook inside Router context
+const AppContent = () => {
+  useSessionTimeout();
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <CookieConsent />
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/dashboard" element={<DashboardLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="tenants" element={<TenantManager />} />
+        </Route>
+      </Routes>
     </>
-  )
+  );
+};
+
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </Router>
+  );
 }
 
-export default App
+export default App;
