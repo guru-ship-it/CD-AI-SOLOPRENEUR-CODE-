@@ -6,7 +6,8 @@ import { whatsappWebhook } from "./whatsapp";
 admin.initializeApp();
 
 // Export WhatsApp Webhook
-export { whatsappWebhook };
+export { whatsappWebhook } from "./whatsapp";
+export { verifyDocument } from "./verification/gateway";
 
 /**
  * Legacy Support: Placeholder for migrated verifyIdentity
