@@ -26,6 +26,12 @@ ComplianceDesk.ai is a "Nuclear-Grade" Enterprise Identity Platform designed for
 - **Honeypot Trap**: `/admin-super-login` triggers immediate IP logging and blacklisting.
 - **Ransomware Immunity**: WORM (Write Once, Read Many) policies applied to production backups.
 
+### D. Commercial Billing (Prepaid Wallet)
+- **Model**: "Pay-As-You-Go" at **99 INR per verification**.
+- **Wallet Service**: Atomic credit deduction performed *before* identity processing using a standardized `checkAndDeductCredits` helper.
+- **Top-up**: Integrated functional top-up simulation via `topUpWallet` Cloud Function.
+- **Alerts**: Proactive WhatsApp/Dashboard alerts triggered when balance drops below threshold (default 1000 INR).
+
 ---
 
 ## 3. Role-Based Access Control (RBAC)

@@ -5,6 +5,7 @@ import { LandingPage } from './pages/LandingPage';
 import { Dashboard } from './pages/Dashboard';
 import { TenantManager } from './pages/TenantManager';
 import { VerificationTerminal } from './pages/VerificationTerminal';
+import { AnalyticsDashboard } from './pages/AnalyticsDashboard';
 import { Login } from './pages/Login';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { useSessionTimeout } from './hooks/useSessionTimeout';
@@ -29,6 +30,7 @@ const AppContent = () => {
             <Route index element={<Dashboard />} />
             <Route path="tenants" element={<TenantManager />} />
             <Route path="verify" element={<VerificationTerminal />} />
+            <Route path="analytics" element={<AnalyticsDashboard />} />
           </Route>
         </Routes>
       </WatermarkOverlay>

@@ -187,7 +187,7 @@ async function handleAutomatedKYC(from: string, mediaId: string, type: string) {
 /**
  * Helper to send messages back to WhatsApp
  */
-async function sendWhatsAppMessage(to: string, text: string) {
+export async function sendWhatsAppMessage(to: string, text: string) {
     if (!WHATSAPP_ACCESS_TOKEN || !WHATSAPP_PHONE_NUMBER_ID) {
         logger.warn("WhatsApp credentials missing. Skipping send.");
         return;

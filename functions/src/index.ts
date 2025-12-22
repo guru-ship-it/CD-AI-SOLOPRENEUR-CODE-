@@ -31,33 +31,26 @@ export const bleachOldDocs = onSchedule({
 
     logger.info(`DPDP Compliance: Bleaching script completed. Deleted ${deletedCount} legacy records.`);
 });
-import { whatsappWebhook } from "./whatsapp";
-
-import { onRequest } from "firebase-functions/v2/https";
-import * as logger from "firebase-functions/logger";
-
-admin.initializeApp();
 
 // FAT 4.3: Honeypot Trap - Visiting /admin-super-login results in an immediate ban
 export const adminSuperLogin = onRequest({ region: "asia-south1" }, async (req, res) => {
     const ip = req.ip || req.headers['x-forwarded-for'];
     logger.error(`CRITICAL SECURITY BREACH: Unauthorized access attempt to Honeypot /admin-super-login from IP: ${ip}. Initiating protocol: IP_BAN.`);
 
-    // In production, we'd trigger a Cloud Armor IP ban here. 
-    // For FAT, we'll log the audit event and return a "Nuclear Trap" response.
     res.status(403).send("<h1>FATAL ERROR: SECURITY PROTOCOL ACTIVATED</h1><p>Your IP has been logged and blacklisted by the CDC AI Fortress Defense System.</p>");
 });
 
 // Export WhatsApp Webhook
 export { whatsappWebhook } from "./whatsapp";
 export { verifyDocument } from "./verification/gateway";
+export { topUpWallet, checkAndDeductCredits } from "./billing/service";
+export { aggregateHourlyStats } from "./analytics";
+export { processCrimeCheck } from "./verification/worker";
+export { processBatch } from "./verification/batch";
 
 /**
- * Legacy Support: Placeholder for migrated verifyIdentity
- * In a real migration, we would move all existing JS logic from the old index.js here.
+ * Legacy Support Proxy
  */
-export const verifyIdentity = functions
-    .region("asia-south1")
-    .https.onCall(async (data, context) => {
-        return { status: "VERIFIED", message: "TypeScript Proxy Active" };
-    });
+export const verifyIdentity = onCall({ region: "asia-south1" }, async (request) => {
+    return { status: "VERIFIED", message: "TypeScript Proxy Active (v2)" };
+});

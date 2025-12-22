@@ -1,14 +1,11 @@
 
 import { NavLink } from 'react-router-dom';
-import { useAuth, UserRole } from '../../context/AuthContext';
-import { Logo } from '../Logo';
+import { useAuth } from '../../context/AuthContext';
+import type { UserRole } from '../../context/AuthContext';
 import {
     LayoutDashboard,
-    FileText,
     Activity,
     CreditCard,
-    Users,
-    HeartPulse,
     ShieldCheck,
     CheckCircle2,
     Settings
@@ -47,6 +44,12 @@ const NAV_ITEMS: NavItem[] = [
         title: 'Global Analytics',
         href: '/dashboard',
         icon: <LayoutDashboard className="w-5 h-5" />,
+        roles: ['MASTER_ADMIN']
+    },
+    {
+        title: 'Visual Intelligence',
+        href: '/dashboard/analytics',
+        icon: <Activity className="w-5 h-5" />,
         roles: ['MASTER_ADMIN']
     },
     {
@@ -179,7 +182,7 @@ export const Sidebar = () => {
                                     {user?.name}
                                 </p>
                                 <p className="text-[10px] font-medium text-slate-500 truncate font-mono">
-                                    {user?.email.length > 20 ? `${user.email.substring(0, 18)}...` : user?.email}
+                                    {user?.email && user.email.length > 20 ? `${user.email.substring(0, 18)}...` : user?.email}
                                 </p>
                             </div>
                         </div>

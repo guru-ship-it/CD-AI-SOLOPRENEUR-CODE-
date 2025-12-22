@@ -1,13 +1,23 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import axios from "axios";
+import * as admin from "firebase-admin";
 import { defineSecret } from "firebase-functions/params";
 import { ADAPTER_REGISTRY } from "./registry";
+import { checkAndDeductCredits } from "../billing/service";
+import { VERIFICATION_COST } from "../billing/interface";
 
 const proteanApiKey = defineSecret("PROTEAN_API_KEY");
 const proteanBearerToken = defineSecret("PROTEAN_BEARER_TOKEN");
 
 export const verifyDocument = onCall({ secrets: [proteanApiKey, proteanBearerToken], region: "asia-south1" }, async (request) => {
     const { type, inputs } = request.data;
+    const auth = request.auth;
+
+    if (!auth) {
+        throw new HttpsError("unauthenticated", "User must be authenticated to perform verification.");
+    }
+
+    const tenantId = auth.token.tenantId || "MASTER_TENANT";
 
     // 1. Validate Adapter Exists
     const adapter = ADAPTER_REGISTRY[type];
@@ -15,11 +25,33 @@ export const verifyDocument = onCall({ secrets: [proteanApiKey, proteanBearerTok
         throw new HttpsError("invalid-argument", `Unsupported ID Type: ${type}`);
     }
 
+    // 2. Commercial Gate: Deduct Credits BEFORE API call
     try {
-        // 2. Build Payload
+        await checkAndDeductCredits(tenantId, VERIFICATION_COST);
+    } catch (error: any) {
+        if (error instanceof HttpsError) throw error;
+        throw new HttpsError("internal", "Billing System Error");
+    }
+
+    // 3. Execution Path: Sync vs Async
+    if (type === 'CRIME_CHECK') {
+        const jobId = `JOB_${Date.now()}`;
+        await admin.firestore().collection('verification_jobs').doc(jobId).set({
+            tenantId,
+            type,
+            inputs,
+            status: 'PENDING',
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            name: inputs.name // For notification
+        });
+        return adapter.normalizeResponse({ job_id: jobId });
+    }
+
+    try {
+        // 4. Build Payload
         const payload = adapter.buildRequest(inputs);
 
-        // 3. Secure Call (Injecting Secrets Centrally)
+        // 5. Secure Call (Injecting Secrets Centrally)
         const response = await axios({
             method: adapter.method,
             url: adapter.endpoint,
@@ -31,7 +63,7 @@ export const verifyDocument = onCall({ secrets: [proteanApiKey, proteanBearerTok
             }
         });
 
-        // 4. Normalize & Return
+        // 6. Normalize & Return
         return adapter.normalizeResponse(response.data);
 
     } catch (error: any) {
