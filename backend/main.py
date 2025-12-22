@@ -1,14 +1,23 @@
 from fastapi import FastAPI, HTTPException, Request
+import uuid
 from pydantic import BaseModel
 from celery.result import AsyncResult
 from .celery_config import celery_app
 from .tasks import generate_legal_pdf, verify_face_with_vertex
+
 
 # PVC Imports
 from .verifiers.factory import PoliceVerifier
 from .services.pvc_application import PVCApplicationEngine
 from .services.pvc_status_checker import PVCStatusChecker
 from .verifiers.pvc_validator import PVCValidator
+from .database import get_db
+from .models import Verification, Grievance, Tenant, Incident
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import desc, select
+from fastapi import Depends
+from datetime import datetime, timedelta
+from typing import List, Optional
 
 app = FastAPI(title="ComplianceDesk API (Async)")
 
@@ -26,6 +35,34 @@ class VerificationRequest(BaseModel):
     name: str
     id: str
     image_url: str
+    country: Optional[str] = "IN" # Default to India
+
+class VerificationResponse(BaseModel):
+    task_id: str
+    applicant_name: str
+    status: str
+    face_verified: Optional[bool]
+    face_confidence: Optional[str]
+    failure_reason: Optional[str]
+    created_at: str
+
+    class Config:
+        from_attributes = True
+
+class GrievanceRequest(BaseModel):
+    task_id: str
+    description: str
+
+class DPOUpdateRequest(BaseModel):
+    name: str # Tenant Name identifier for simple lookup
+    dpo_name: str
+    dpo_email: str
+    dpo_phone: str
+    region: str
+
+class IncidentRequest(BaseModel):
+    description: str
+    tenant_name: str
 
 class WhatsAppPayload(BaseModel):
     user_id: str
@@ -33,19 +70,61 @@ class WhatsAppPayload(BaseModel):
     image_url: str = None
 
 @app.post("/verify")
-async def request_verification(request: VerificationRequest):
+async def request_verification(request: VerificationRequest, db: AsyncSession = Depends(get_db)):
     """
     Enqueues verification tasks to the worker.
     Returns immediately with task IDs.
     """
+    # 0. NRIC Masking Protocol (Singapore PDPA)
+    final_id = request.id
+    if request.country == "SG":
+        # Keep only last 4 chars (e.g. S1234567A -> *****567A)
+        if len(request.id) > 4:
+            masked_part = "*" * (len(request.id) - 4)
+            visible_part = request.id[-4:]
+            final_id = f"{masked_part}{visible_part}"
+    
+    # 0.5 POPIA/NDPR Enforcement: Check DPO for high volume
+    # Mocking Tenant ID 1 for this demo (In real auth, get from token)
+    tenant_id = 1 
+    result = await db.execute(select(Tenant).filter(Tenant.id == tenant_id))
+    tenant = result.scalars().first()
+    
+    if tenant:
+        # Check volume
+        count_result = await db.execute(select(Verification).filter(Verification.tenant_id == tenant_id))
+        v_count = len(count_result.scalars().all()) # Simplified count for demo
+        if v_count > 100:
+            if not tenant.dpo_name or not tenant.dpo_email:
+                 raise HTTPException(
+                     status_code=403, 
+                     detail="POPIA COMPLIANCE BLOCK: You have exceeded 100 verifications. You MUST appoint an Information Officer (DPO) to continue processing."
+                 )
+
+    # Generate Task ID
+    task_id = str(uuid.uuid4())
+    
+    # Save Initial State to DB
+    verification = Verification(
+        task_id=task_id,
+        tenant_id=tenant_id,
+        applicant_name=request.name,
+        applicant_id=final_id, # Stored Masked if SG
+        image_url=request.image_url,
+        status="PROCESSING"
+    )
+    db.add(verification)
+    await db.commit()
+
     # 1. Trigger PDF Generation (CPU Heavy)
-    pdf_task = generate_legal_pdf.delay(request.model_dump())
+    pdf_task = generate_legal_pdf.delay({"name": request.name, "id": final_id})
     
     # 2. Trigger Face Verification (Network Heavy)
     face_task = verify_face_with_vertex.delay(request.image_url)
     
     return {
         "message": "Verification processing started",
+        "task_id": task_id,
         "pdf_task_id": pdf_task.id,
         "face_task_id": face_task.id
     }
@@ -164,6 +243,107 @@ async def whatsapp_webhook(payload: WhatsAppPayload):
     USER_SESSIONS[user_id] = {"state": next_state, "context": context}
 
     return {"response": response_text, "next_state": next_state}
+
+    return {"response": response_text, "next_state": next_state}
+
+
+@app.get("/verifications", response_model=List[VerificationResponse])
+async def list_verifications(skip: int = 0, limit: int = 20, db: AsyncSession = Depends(get_db)):
+    """
+    Get recent verifications for the dashboard.
+    """
+    result = await db.execute(
+        select(Verification).order_by(desc(Verification.created_at)).offset(skip).limit(limit)
+    )
+    verifications = result.scalars().all()
+    # Manual mapping to simple string for datetime if needed, or rely on pydantic
+    results = []
+    for v in verifications:
+        results.append({
+            "task_id": v.task_id,
+            "applicant_name": v.applicant_name,
+            "status": v.status,
+            "face_verified": v.face_verified,
+            "face_confidence": v.face_confidence,
+            "failure_reason": v.failure_reason,
+            "created_at": v.created_at.strftime("%Y-%m-%d %H:%M:%S") if v.created_at else ""
+        })
+    return results
+
+@app.post("/grievances")
+async def report_grievance(request: GrievanceRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Submit a grievance for a verification.
+    """
+    # 1. Verify task exists
+    result = await db.execute(select(Verification).filter(Verification.task_id == request.task_id))
+    verification = result.scalars().first()
+    if not verification:
+        raise HTTPException(status_code=404, detail="Verification not found")
+    
+    # 2. Update status to UNDER_REVIEW
+    verification.status = "UNDER_REVIEW"
+    
+    # 3. Create Grievance record
+    grievance = Grievance(
+        verification_id=verification.id,
+        task_id=request.task_id,
+        description=request.description
+    )
+    db.add(grievance)
+    await db.commit()
+    
+    # SLA & Notification
+    print(f"[EMAIL SERVICE] 📧 Sending High Priority Alert to support@compliancedesk.ai for Task {request.task_id}")
+    print(f"[EMAIL SERVICE] ⏳ SLA Timer Started: 24 Hours for Resolution.")
+    
+    return {"message": "Grievance submitted", "status": "UNDER_REVIEW"}
+
+@app.post("/tenants/dpo")
+async def update_dpo(request: DPOUpdateRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Update/Create Tenant with DPO details.
+    """
+    result = await db.execute(select(Tenant).filter(Tenant.name == request.name))
+    tenant = result.scalars().first()
+    if not tenant:
+        tenant = Tenant(name=request.name)
+        db.add(tenant)
+    
+    tenant.dpo_name = request.dpo_name
+    tenant.dpo_email = request.dpo_email
+    tenant.dpo_phone = request.dpo_phone
+    tenant.region = request.region
+    
+    await db.commit()
+    await db.refresh(tenant)
+    return {"message": "DPO Details Updated", "region": tenant.region}
+
+@app.post("/incidents")
+async def report_incident(request: IncidentRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Report a security incident (72-hour timer).
+    """
+    deadline = datetime.now() + timedelta(hours=72)
+    
+    incident = Incident(
+        description=request.description,
+        report_deadline=deadline,
+        status="OPEN"
+    )
+    db.add(incident)
+    await db.commit()
+    
+    # Simulate Regulator Email
+    print(f"🚨 SECURITY INCIDENT DECLARED: {request.description}")
+    print(f"📧 Drafting email to Data Protection Regulator...")
+    print(f"⏱️ 72-Hour Countown Started. Deadline: {deadline}")
+    
+    return {
+        "message": "Incident Declared", 
+        "deadline": deadline.isoformat(),
+        "deadline_hours": 72
+    }
 
 @app.get("/tasks/{task_id}")
 async def get_task_status(task_id: str):

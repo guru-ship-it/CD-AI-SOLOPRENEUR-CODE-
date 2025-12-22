@@ -29,8 +29,24 @@ def verify_face_with_vertex(image_url: str):
     time.sleep(2)
     
     # Mock result
-    confidence = random.uniform(0.8, 0.99)
-    is_verified = confidence > 0.85
+    confidence = random.uniform(0.60, 0.99) # Increased range to trigger failures
     
-    print(f"[{verify_face_with_vertex.name}] Verification complete. Verified: {is_verified}")
-    return {"verified": is_verified, "confidence": confidence}
+    is_verified = False
+    reason = None
+    
+    # Explainability Logic
+    if confidence < 0.70:
+        is_verified = False
+        reason = "Face Does Not Match ID Photo"
+    elif confidence < 0.80:
+         # Simulate blurry or low quality sometimes
+         if random.choice([True, False]):
+             is_verified = False
+             reason = "Image Quality Low / Blurry"
+         else:
+             is_verified = True
+    else:
+        is_verified = True
+
+    print(f"[{verify_face_with_vertex.name}] Verification complete. Verified: {is_verified}, Reason: {reason}")
+    return {"verified": is_verified, "confidence": f"{confidence:.2%}", "reason": reason}

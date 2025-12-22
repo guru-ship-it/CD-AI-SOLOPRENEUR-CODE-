@@ -1,33 +1,31 @@
-# International Security Standards (GDPR / ISO 27001 / SOC 2)
+# Phase 5: Afro-Asian Compliance Strategy
 
-## 1. Vulnerability Disclosure Policy (RFC 9116)
-* **File Path:** `public/.well-known/security.txt`
-* **Content:**
-    ```text
-    Contact: mailto:support@compliancedesk.ai
-    Expires: 2025-12-31T23:59:00.000Z
-    Preferred-Languages: en
-    Canonical: https://compliancedesk.ai/.well-known/security.txt
-    ```
+## 1. The "Information Officer" Designation (South Africa POPIA)
+*   **Requirement:** Every company must legally appoint an "Information Officer" (DPO).
+*   **Implementation:**
+    *   **UI:** "Legal Compliance Officer" section in Company Settings.
+    *   **Logic:** Block "Go Live" if DPO Name, Phone, and Email are missing.
 
-## 2. Data Portability (GDPR Export)
-* **Objective:** Allow Company Admins to export all their tenant data.
-* **Cloud Function:** `exportTenantData(tenantId)`
-* **Output:** A password-protected ZIP file containing:
-    * `users.json` (List of active accounts)
-    * `audit_logs.json` (History of actions)
-    * `verifications_summary.csv` (Anonymized stats)
+## 2. The "March 15th" Audit Generator (Nigeria NDPR)
+*   **Requirement:** Annual Data Protection Audit by March 15th.
+*   **Implementation:**
+    *   **Script:** `generateNDPRAudit()`
+    *   **Output:** PDF/Markdown report with Total Identities, Breaches, Encryption.
 
-## 3. Supply Chain Security (SBOM)
-* **Tool:** Use `@cyclonedx/cyclonedx-npm`
-* **Pipeline:** Generate `sbom.xml` during every build.
-* **Storage:** Upload this SBOM to a private "Release Artifacts" bucket in Google Cloud Storage for audit purposes.
+## 3. NRIC "Masking" Protocol (Singapore PDPA)
+*   **Requirement:** Do not store full NRIC unless necessary. Mask it.
+*   **Implementation:**
+    *   **Logic:** If `country == 'SG'`, store `*****567A`.
+    *   **Display:** Show masked ID.
 
-## 4. Active Defense (CSP Reporting)
-* **Header Update:** Modify `Content-Security-Policy` in `firebase.json` to include:
-    `report-uri https://api.compliancedesk.ai/csp-report;`
-* **Endpoint:** Create a lightweight Cloud Function to ingest these reports and log "High Alert" warnings if XSS attempts spike.
+## 4. The "72-Hour" Breach Timer (Kenya DPA / GDPR)
+*   **Requirement:** Report data breaches within 72 hours.
+*   **Implementation:**
+    *   **Feature:** "Declare Security Incident" button.
+    *   **Effect:** Starts 72h countdown, drafts email to regulator (ODPC/NDPC).
 
-## 5. Cookie Consent Manager (ePrivacy Directive)
-* **UI:** A "Strict" cookie banner that blocks *all* non-essential cookies until the user explicitly clicks "Accept".
-* **Storage:** Save this preference in the `consent_ledger` defined in the DPDP step.
+## 5. Cross-Border "Adequacy" Checks (Africa Region)
+*   **Requirement:** Data Residency Pinning (Adequacy).
+*   **Implementation:**
+    *   **Rule:** Indian Users -> `asia-south1`, African Users -> `africa-south1`.
+    *   **Config:** Tenant selects "Home Region" on signup.

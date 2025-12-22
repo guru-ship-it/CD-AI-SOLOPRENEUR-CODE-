@@ -20,7 +20,14 @@ export const TenantManager = () => {
     const [showAddModal, setShowAddModal] = useState(false);
 
     // Form State
-    const [newCompany, setNewCompany] = useState({ name: '', email: '' });
+    const [newCompany, setNewCompany] = useState({
+        name: '',
+        email: '',
+        dpoName: '',
+        dpoEmail: '',
+        dpoPhone: '',
+        region: 'asia-south1'
+    });
 
     // Access Control Logic
     useEffect(() => {
@@ -29,18 +36,46 @@ export const TenantManager = () => {
         }
     }, [user, isMFAVerified, navigate]);
 
-    const handleCreateTenant = () => {
+    const handleCreateTenant = async () => {
         if (!newCompany.name || !validateEmail(newCompany.email)) return;
 
-        // CERT-In: Log the admin action
-        logAuditAction('CREATE_TENANT', user?.email || 'unknown', {
-            companyName: newCompany.name,
-            adminEmail: newCompany.email
-        });
+        // POPIA/NDPR Compliance Check
+        if (!newCompany.dpoName || !newCompany.dpoEmail || !newCompany.dpoPhone) {
+            alert("Compliance Error: Information Officer (DPO) details are mandatory for this region.");
+            return;
+        }
 
-        alert('Company Created & Action Logged (Check Console)');
-        setShowAddModal(false);
-        setNewCompany({ name: '', email: '' });
+        try {
+            await fetch('http://localhost:8000/tenants/dpo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: newCompany.name,
+                    dpo_name: newCompany.dpoName,
+                    dpo_email: newCompany.dpoEmail,
+                    dpo_phone: newCompany.dpoPhone,
+                    region: newCompany.region
+                })
+            });
+
+            // CERT-In: Log the admin action
+            logAuditAction('CREATE_TENANT', user?.email || 'unknown', {
+                companyName: newCompany.name,
+                adminEmail: newCompany.email,
+                region: newCompany.region,
+                compliance: 'POPIA_CHECKED'
+            });
+
+            alert('Company Onboarded with DPO & Data Residency Pinned.');
+            setShowAddModal(false);
+            setNewCompany({
+                name: '', email: '',
+                dpoName: '', dpoEmail: '', dpoPhone: '',
+                region: 'asia-south1'
+            });
+        } catch (e) {
+            alert("Failed to onboard tenant");
+        }
     };
 
     return (
@@ -161,8 +196,50 @@ export const TenantManager = () => {
                                 value={newCompany.email}
                                 onChange={(e) => setNewCompany({ ...newCompany, email: e.target.value })}
                                 validator={validateEmail}
+                                validator={validateEmail}
                                 errorMessage="Please enter a valid enterprise email."
                             />
+
+                            <hr className="border-gray-100" />
+                            <h4 className="font-semibold text-sm text-slate-800">Compliance & Data Residency</h4>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <ValidatedInput
+                                    label="DPO Name"
+                                    placeholder="Legal Officer Name"
+                                    value={newCompany.dpoName}
+                                    onChange={(e) => setNewCompany({ ...newCompany, dpoName: e.target.value })}
+                                />
+                                <ValidatedInput
+                                    label="DPO Phone"
+                                    placeholder="+91..."
+                                    value={newCompany.dpoPhone}
+                                    onChange={(e) => setNewCompany({ ...newCompany, dpoPhone: e.target.value })}
+                                />
+                            </div>
+                            <ValidatedInput
+                                label="DPO Email"
+                                placeholder="dpo@company.com"
+                                type="email"
+                                value={newCompany.dpoEmail}
+                                onChange={(e) => setNewCompany({ ...newCompany, dpoEmail: e.target.value })}
+                            />
+
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium text-gray-700">Data Residency (Pinning)</label>
+                                <select
+                                    className="w-full p-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                                    value={newCompany.region}
+                                    onChange={(e) => setNewCompany({ ...newCompany, region: e.target.value })}
+                                >
+                                    <option value="asia-south1">India (asia-south1) - DPDP Compliant</option>
+                                    <option value="africa-south1">South Africa (africa-south1) - POPIA Compliant</option>
+                                    <option value="eu-west1">Europe (eu-west1) - GDPR Compliant</option>
+                                </select>
+                                <p className="text-xs text-slate-500">
+                                    *Data will be physically pinned to this Google Cloud region.
+                                </p>
+                            </div>
                             <div className="flex gap-4 pt-4">
                                 <button onClick={() => setShowAddModal(false)} className="flex-1 px-4 py-2 border border-gray-300 rounded-lg font-semibold text-gray-600 hover:bg-gray-50">Cancel</button>
                                 <button onClick={handleCreateTenant} className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-lg shadow-emerald-900/10">Create Tenant</button>
