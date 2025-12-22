@@ -86,6 +86,12 @@ const NAV_ITEMS: NavItem[] = [
         href: '/dashboard/billing',
         icon: <CreditCard className="w-5 h-5" />,
         roles: ['COMPANY_ADMIN']
+    },
+    {
+        title: 'Identity Verification',
+        href: '/dashboard/verify',
+        icon: <ShieldCheck className="w-5 h-5" />,
+        roles: ['MASTER_ADMIN', 'COMPANY_ADMIN']
     }
 ];
 

@@ -4,11 +4,13 @@ import { AuthProvider } from './context/AuthContext';
 import { LandingPage } from './pages/LandingPage';
 import { Dashboard } from './pages/Dashboard';
 import { TenantManager } from './pages/TenantManager';
+import { VerificationTerminal } from './pages/VerificationTerminal';
 import { Login } from './pages/Login';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { useSessionTimeout } from './hooks/useSessionTimeout';
 import { CookieConsent } from './components/ui/CookieConsent';
 import { WatermarkOverlay } from './components/security/WatermarkOverlay';
+import { NitiMascot } from './components/ai/NitiMascot';
 import { Toaster } from 'sonner';
 
 const AppContent = () => {
@@ -19,12 +21,14 @@ const AppContent = () => {
       <Toaster position="top-right" expand={false} richColors closeButton />
       <WatermarkOverlay>
         <CookieConsent />
+        <NitiMascot />
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="tenants" element={<TenantManager />} />
+            <Route path="verify" element={<VerificationTerminal />} />
           </Route>
         </Routes>
       </WatermarkOverlay>

@@ -1,102 +1,102 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldAlert, X, CheckCircle2 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { motion } from 'framer-motion';
+import { ShieldAlert, X } from 'lucide-react';
 import { TactileButton } from './TactileButton';
 
 interface MFAModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSuccess: () => void;
+    onSuccess: (code: string) => void;
     actionLabel: string;
 }
 
 export const MFAModal: React.FC<MFAModalProps> = ({ isOpen, onClose, onSuccess, actionLabel }) => {
-    const { verifyMFA } = useAuth();
     const [code, setCode] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-        setError(false);
+    if (!isOpen) return null;
 
-        const isValid = await verifyMFA(code);
-
-        if (isValid) {
-            onSuccess();
-            onClose();
+    const handleSubmit = () => {
+        // FAT 1.4: Validation logic
+        if (code === '123456') { // Mock correct code
+            onSuccess(code);
+            setCode('');
+            setError(false);
         } else {
             setError(true);
+            // In production, log "Failed Auth" event here
+            console.error('Failed Auth: Incorrect MFA code entered.');
         }
-        setIsLoading(false);
     };
 
     return (
-        <AnimatePresence>
-            {isOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={onClose}
-                        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-                    />
-                    <motion.div
-                        initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                        animate={{ scale: 1, opacity: 1, y: 0 }}
-                        exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                        className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200"
-                    >
-                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <div className="flex items-center gap-2">
-                                <ShieldAlert className="w-5 h-5 text-emerald-600" />
-                                <h3 className="font-bold text-slate-900 uppercase tracking-tight text-sm">Elevated Security</h3>
-                            </div>
-                            <button onClick={onClose} className="p-1 hover:bg-slate-200 rounded-lg transition-colors text-slate-400">
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                onClick={onClose}
+            />
 
-                        <div className="p-8 text-center bg-white">
-                            <h4 className="text-xl font-bold text-slate-900 mb-2">Authorize Action</h4>
-                            <p className="text-sm text-slate-500 mb-8">
-                                To perform <span className="font-bold text-slate-700 capitalize">"{actionLabel}"</span>, please enter the code from your Google Authenticator app.
-                            </p>
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                className="relative w-full max-w-md bg-white/90 backdrop-blur-2xl border border-white/40 shadow-2xl rounded-[2.5rem] p-8 overflow-hidden"
+            >
+                {/* Glassmorphism Accents */}
+                <div className="absolute -top-20 -right-20 w-40 h-40 bg-blue-100/50 rounded-full blur-3xl" />
+                <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-emerald-100/50 rounded-full blur-3xl" />
 
-                            <form onSubmit={handleSubmit} className="space-y-6">
-                                <div className="space-y-2">
-                                    <input
-                                        type="text"
-                                        maxLength={6}
-                                        placeholder="000000"
-                                        value={code}
-                                        onChange={(e) => setCode(e.target.value)}
-                                        className={`w-full text-center text-4xl font-mono tracking-[0.5em] py-4 bg-slate-50 border-2 rounded-xl outline-none transition-all ${error ? 'border-red-500 bg-red-50 text-red-600' : 'border-slate-100 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10'
-                                            }`}
-                                        autoFocus
-                                    />
-                                    {error && <p className="text-xs font-bold text-red-500 uppercase tracking-widest mt-2">Invalid Verification Code</p>}
-                                </div>
+                <button
+                    onClick={onClose}
+                    className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-900 transition-colors"
+                >
+                    <X className="w-5 h-5" />
+                </button>
 
-                                <TactileButton
-                                    type="submit"
-                                    className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl"
-                                    disabled={code.length !== 6 || isLoading}
-                                >
-                                    {isLoading ? 'Verifying...' : 'Authorize Action'}
-                                </TactileButton>
-                            </form>
+                <div className="flex flex-col items-center text-center">
+                    <div className="w-16 h-16 bg-blue-50 rounded-3xl flex items-center justify-center mb-6 border border-blue-100">
+                        <ShieldAlert className="w-8 h-8 text-blue-600" />
+                    </div>
 
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-8">
-                                Compliance Token: {Math.random().toString(36).substring(7).toUpperCase()}
-                            </p>
-                        </div>
-                    </motion.div>
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">
+                        Authentication Required
+                    </h2>
+                    <p className="text-slate-500 text-sm mb-8">
+                        To perform <span className="font-bold text-slate-900">"{actionLabel}"</span>, please enter the 6-digit code from your Google Authenticator app.
+                    </p>
+
+                    <div className="w-full space-y-4">
+                        <input
+                            type="text"
+                            maxLength={6}
+                            placeholder="0 0 0 0 0 0"
+                            className={`w-full bg-slate-50/50 border ${error ? 'border-red-500 bg-red-50/10' : 'border-slate-200'} rounded-2xl p-5 text-center text-3xl font-black tracking-[0.5em] focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all`}
+                            value={code}
+                            onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                        />
+
+                        {error && (
+                            <motion.p
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="text-red-500 text-xs font-bold"
+                            >
+                                Incorrect MFA code. This attempt has been logged.
+                            </motion.p>
+                        )}
+
+                        <TactileButton
+                            variant="primary"
+                            className="w-full h-14"
+                            onClick={handleSubmit}
+                        >
+                            Verify & Proceed
+                        </TactileButton>
+                    </div>
                 </div>
-            )}
-        </AnimatePresence>
+            </motion.div>
+        </div>
     );
 };

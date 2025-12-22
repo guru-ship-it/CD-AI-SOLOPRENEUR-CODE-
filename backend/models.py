@@ -9,9 +9,8 @@ class Verification(Base):
     task_id = Column(String, unique=True, index=True, nullable=False)
     tenant_id = Column(Integer, index=True, nullable=True) # Link to Tenant
     
-    applicant_name = Column(String, nullable=False)
-    applicant_id = Column(String, nullable=False)
-    image_url = Column(String, nullable=False)
+    # FAT 5.1: Vault Isolation - No naked PII in verifications table
+    vault_token = Column(String, unique=True, index=True, nullable=False) 
     
     status = Column(String, default="PENDING") # PENDING, PROCESSING, COMPLETED, FAILED, UNDER_REVIEW
     
@@ -83,5 +82,14 @@ class ActionApproval(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     deadline = Column(DateTime(timezone=True)) # 1-hour expiry
+
+class Vault(Base):
+    __tablename__ = "secure_vault"
+    
+    # FAT 5.1: The physical vault containing the actual PII
+    token = Column(String, primary_key=True, index=True) # Linked to vault_token in verifications
+    pii_json = Column(String, nullable=False) # Encrypted PII (Name, ID, etc.)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 

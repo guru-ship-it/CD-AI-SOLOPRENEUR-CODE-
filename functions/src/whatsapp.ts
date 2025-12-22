@@ -18,7 +18,7 @@ const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
  * Webhook for WhatsApp Cloud API
  * Handles GET (Verification) and POST (Messages)
  */
-export const whatsappWebhook = onRequest(async (req, res) => {
+export const whatsappWebhook = onRequest({ region: "asia-south1" }, async (req, res) => {
     // 1. Webhook Verification (Handshake)
     if (req.method === "GET") {
         const mode = req.query["hub.mode"];
