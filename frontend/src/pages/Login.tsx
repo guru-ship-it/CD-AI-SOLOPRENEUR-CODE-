@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import { GlassCard } from '../components/ui/GlassCard';
 import { TactileButton } from '../components/ui/TactileButton';
+import { NitiMascot } from '../components/ui/NitiMascot';
 
 export const Login = () => {
     const [email, setEmail] = useState('');
@@ -36,12 +37,15 @@ export const Login = () => {
             <div className="flex-1 flex flex-col justify-center px-8 md:px-24 bg-white relative z-10">
                 <div className="max-w-md w-full mx-auto space-y-12">
 
-                    <Link to="/" className="flex items-center gap-3 group">
-                        <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-slate-900/20 group-hover:scale-105 transition-transform">
-                            <ShieldCheck className="w-6 h-6" />
-                        </div>
-                        <span className="font-black text-slate-900 uppercase tracking-[0.2em] text-sm">CDC AI</span>
-                    </Link>
+                    <div className="flex items-center justify-between">
+                        <Link to="/" className="flex items-center gap-3 group">
+                            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-slate-900/20 group-hover:scale-105 transition-transform">
+                                <ShieldCheck className="w-6 h-6" />
+                            </div>
+                            <span className="font-black text-slate-900 uppercase tracking-[0.2em] text-sm">CDC AI</span>
+                        </Link>
+                        <NitiMascot size="sm" />
+                    </div>
 
                     <div className="space-y-4">
                         <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-[1.1]">

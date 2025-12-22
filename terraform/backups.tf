@@ -36,3 +36,27 @@ resource "google_storage_bucket" "immutable_backups" {
     "compliance"    = "ransomware-immunity"
   }
 }
+# Raw KYC Image Storage (24-Hour Bleaching)
+# Goal: Ensure PII images are auto-deleted after 24 hours for DPDP/GDPR compliance.
+
+resource "google_storage_bucket" "raw_kyc_images" {
+  name          = "compliancedesk-raw-kyc-images-mumbai"
+  location      = "ASIA-SOUTH1"
+  storage_class = "STANDARD"
+
+  force_destroy = true
+
+  lifecycle_rule {
+    condition {
+      age = 1 # 1 day
+    }
+    action {
+      type = "Delete"
+    }
+  }
+
+  labels = {
+    "security-tier" = "bleached-storage"
+    "compliance"    = "data-minimization"
+  }
+}

@@ -36,10 +36,9 @@ service cloud.firestore {
     match /{document=**} {
       // 1. PANIC MODE CHECK (Kill Switch)
       // If 'security_status' is not ACTIVE, reject all writes/reads immediately.
-      allow read, write: if get(/databases/$(database)/documents/system_config/security_status).data.status == 'ACTIVE';
-
-      // Deny if Banned (Conceptual - enforce via Cloud Armor/Functions for IPs)
-      allow read, write: if request.auth != null;
+      allow read, write: if get(/databases/$(database)/documents/system_config/security_status).data.status == 'ACTIVE'
+                        && request.auth != null
+                        && request.app != null;
     }
   }
 }

@@ -13,11 +13,14 @@ const MOCK_TENANTS = [
     { id: 4, name: 'DMRC', admin: 'hr@delhimetrorail.com', users: 56, status: 'Pending', plan: 'Enterprise' },
 ];
 
+import { MFAModal } from '../components/ui/MFAModal';
+
 export const TenantManager = () => {
     const { user, isMFAVerified } = useAuth();
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
+    const [showMFAModal, setShowMFAModal] = useState(false);
 
     // Form State
     const [newCompany, setNewCompany] = useState({
@@ -28,13 +31,6 @@ export const TenantManager = () => {
         dpoPhone: '',
         region: 'asia-south1'
     });
-
-    // Access Control Logic
-    useEffect(() => {
-        if (user?.email === 'guru@compliancedesk.ai' && !isMFAVerified) {
-            navigate('/');
-        }
-    }, [user, isMFAVerified, navigate]);
 
     const handleCreateTenant = async () => {
         if (!newCompany.name || !validateEmail(newCompany.email)) return;
@@ -78,16 +74,31 @@ export const TenantManager = () => {
         }
     };
 
+    const handleAddClick = () => {
+        if (!isMFAVerified) {
+            setShowMFAModal(true);
+        } else {
+            setShowAddModal(true);
+        }
+    };
+
     return (
         <div className="max-w-6xl mx-auto space-y-8">
+            <MFAModal
+                isOpen={showMFAModal}
+                onClose={() => setShowMFAModal(false)}
+                onSuccess={() => setShowAddModal(true)}
+                actionLabel="Onboard New Company"
+            />
+
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Tenant Manager</h1>
+                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight text-high-contrast">Tenant Manager</h1>
                     <p className="text-gray-500 mt-1">Onboard and manage Enterprise Clients</p>
                 </div>
                 <button
-                    onClick={() => setShowAddModal(true)}
+                    onClick={handleAddClick}
                     className="flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-900/10 transition-all hover:-translate-y-0.5"
                 >
                     <Plus className="w-5 h-5" />

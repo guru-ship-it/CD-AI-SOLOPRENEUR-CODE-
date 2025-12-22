@@ -7,6 +7,7 @@ import { TactileButton } from '../components/ui/TactileButton';
 import { Badge } from '../components/ui/Badge';
 import { ApprovalWidget } from '../components/governance/ApprovalWidget';
 import { BreachTimer } from '../components/governance/BreachTimer';
+import { NitiMascot } from '../components/ui/NitiMascot';
 import { cn } from '../utils/cn';
 
 const API_URL = "http://localhost:8000";
@@ -73,6 +74,7 @@ export const Dashboard = () => {
             {/* Top Bar - Clean White + Glass */}
             <div className="flex items-center justify-between glass-panel px-6 py-4 border-white/60 bg-white/40 shadow-xl shadow-slate-900/5">
                 <div className="flex items-center gap-6">
+                    <NitiMascot size="sm" className="hidden sm:block" />
                     <div className="hidden md:block">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Master Terminal</p>
                         <h2 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase">

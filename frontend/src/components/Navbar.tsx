@@ -1,14 +1,32 @@
-
+import React, { useState, useEffect } from 'react';
 import { Logo } from './Logo';
+import { Eye, EyeOff } from 'lucide-react';
 
 export const Navbar = () => {
+    const [isHighContrast, setIsHighContrast] = useState(false);
+
+    useEffect(() => {
+        if (isHighContrast) {
+            document.documentElement.classList.add('high-contrast');
+        } else {
+            document.documentElement.classList.remove('high-contrast');
+        }
+    }, [isHighContrast]);
+
     return (
         <nav className="fixed w-full z-50 top-0 start-0 border-b border-white/10 bg-slate-900/40 backdrop-blur-xl shadow-lg shadow-emerald-900/5">
             <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
                 <a href="#" className="flex items-center space-x-3 rtl:space-x-reverse">
                     <Logo />
                 </a>
-                <div className="flex md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
+                <div className="flex md:order-2 space-x-3 md:space-x-4 rtl:space-x-reverse items-center">
+                    <button
+                        onClick={() => setIsHighContrast(!isHighContrast)}
+                        className="p-2 text-slate-400 hover:text-white transition-colors"
+                        title="Toggle High Contrast Mode"
+                    >
+                        {isHighContrast ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
                     <button type="button" className="text-white bg-emerald-600 hover:bg-emerald-700 focus:ring-4 focus:outline-none focus:ring-emerald-800 font-medium rounded-lg text-sm px-4 py-2 text-center cursor-pointer transition-colors duration-200">
                         Get Started
                     </button>
