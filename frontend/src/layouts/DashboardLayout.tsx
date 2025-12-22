@@ -69,6 +69,8 @@ const MFAModal = ({ onVerify }: { onVerify: (code: string) => Promise<boolean> }
     );
 };
 
+import { BhashaSwitcher } from '../components/ui/BhashaSwitcher';
+
 export const DashboardLayout = () => {
     const { isMFAVerified, verifyMFA } = useAuth(); // removed 'user' as it's used in Sidebar now
 
@@ -81,7 +83,11 @@ export const DashboardLayout = () => {
             <Sidebar />
 
             {/* Main Content Area */}
-            <main className={`flex-1 ml-64 min-h-screen p-8 transition-all duration-300 ${!isMFAVerified ? 'blur-md' : ''}`}>
+            <main className={`flex-1 ml-64 min-h-screen p-8 transition-all duration-300 relative ${!isMFAVerified ? 'blur-md' : ''}`}>
+                {/* Bhasha Switcher - Top Right of Main Content */}
+                <div className="absolute top-8 right-8 z-10">
+                    <BhashaSwitcher />
+                </div>
                 <Outlet />
             </main>
         </div>

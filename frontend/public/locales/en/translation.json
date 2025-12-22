@@ -1,0 +1,27 @@
+{
+    "common": {
+        "welcome": "Welcome",
+        "dashboard": "Dashboard",
+        "tenants": "Tenant Manager",
+        "login": "Login",
+        "logout": "Logout",
+        "search": "Search...",
+        "save": "Save",
+        "cancel": "Cancel"
+    },
+    "auth": {
+        "login_title": "Enterprise Compliance Portal",
+        "login_subtitle": "Secure Identity Verification for Digital India",
+        "get_started": "Get Started"
+    },
+    "consent": {
+        "title": "Digital Personal Data Protection (DPDP) Consent Request",
+        "template": "I, the undersigned, hereby give my voluntary and informed consent to ComplianceDesk.ai to process my personal data (including Identity documents) for the purpose of identity verification and regulatory compliance. I understand that my data will be stored securely in the Asia-South1 region and will not be shared with unauthorized third parties.",
+        "agree": "I Agree & Proceed",
+        "decline": "Decline"
+    },
+    "niti": {
+        "greeting": "Namaste! I am Niti, your AI compliance assistant.",
+        "help": "How can I assist you with your regulatory verification today?"
+    }
+}

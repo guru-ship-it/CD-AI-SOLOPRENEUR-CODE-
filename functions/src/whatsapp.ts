@@ -2,9 +2,12 @@ import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import axios from "axios";
 import { ImageAnnotatorClient } from "@google-cloud/vision";
+import { TranslationServiceClient } from "@google-cloud/translate";
 import { getNitiResponse } from "./gemini";
 
 const visionClient = new ImageAnnotatorClient();
+const translateClient = new TranslationServiceClient();
+const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || "compliance-desk-antigravity";
 
 // These would normally be in Firebase Secrets
 const WHATSAPP_VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "CDC_AI_SECURE_TRUST_2025";
@@ -81,14 +84,33 @@ export const whatsappWebhook = onRequest(async (req, res) => {
 });
 
 /**
- * Niti AI Handler (Gemini Flash Integration)
+ * Niti AI Handler (Gemini Flash + Translate API Integration)
  */
 async function handleNitiAI(from: string, query: string) {
     logger.info(`Niti AI processing query: ${query}`);
 
-    const response = await getNitiResponse(query);
+    try {
+        // 1. Detect Language
+        const [detection] = await translateClient.detectLanguage({
+            parent: `projects/${PROJECT_ID}/locations/global`,
+            content: query,
+        });
+        const detectedLanguage = detection.languages?.[0]?.languageCode || 'en';
+        logger.info(`Detected language: ${detectedLanguage}`);
 
-    await sendWhatsAppMessage(from, response);
+        // 2. Get AI Response (Gemini handles the persona and multilingual context)
+        const response = await getNitiResponse(query);
+
+        // 3. If the detected language is not English, and Niti didn't already translate it 
+        // (Gemini usually does if the prompt is in that language), we can ensure it via Translate API.
+        // For this phase, we'll assume Gemini handles the nuance but we have the capability.
+
+        await sendWhatsAppMessage(from, response);
+    } catch (error) {
+        logger.error("Error in handleNitiAI translation/gemini logic:", error);
+        const fallback = await getNitiResponse(query);
+        await sendWhatsAppMessage(from, fallback);
+    }
 }
 
 /**

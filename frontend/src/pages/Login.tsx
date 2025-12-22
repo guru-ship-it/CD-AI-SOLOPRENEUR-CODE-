@@ -1,17 +1,13 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { ShieldCheck, ArrowRight, Lock, Mail } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
-import { useAuth } from '../context/AuthContext';
-import { GlassCard } from '../components/ui/GlassCard';
-import { TactileButton } from '../components/ui/TactileButton';
-import { NitiMascot } from '../components/ui/NitiMascot';
+import { BhashaSwitcher } from '../components/ui/BhashaSwitcher';
+import { ConsentModal } from '../components/ui/ConsentModal';
+import { useTranslation } from 'react-i18next';
 
 export const Login = () => {
+    const { t } = useTranslation();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showConsent, setShowConsent] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
 
@@ -32,6 +28,12 @@ export const Login = () => {
 
     return (
         <div className="min-h-screen flex flex-col md:flex-row bg-white overflow-hidden font-sans">
+            <ConsentModal isOpen={showConsent} onClose={() => setShowConsent(false)} onAgree={() => setShowConsent(false)} />
+
+            {/* Bhasha Switcher - Top Right */}
+            <div className="absolute top-6 right-6 z-[60]">
+                <BhashaSwitcher />
+            </div>
 
             {/* Left: Branding & Login Form */}
             <div className="flex-1 flex flex-col justify-center px-8 md:px-24 bg-white relative z-10">
@@ -49,10 +51,10 @@ export const Login = () => {
 
                     <div className="space-y-4">
                         <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-[1.1]">
-                            Master <span className="text-emerald-500">Access</span>.
+                            {t('auth.login_title')} <span className="text-emerald-500">Access</span>.
                         </h1>
                         <p className="text-slate-500 font-medium tracking-tight">
-                            Enter your secure credentials to bypass the trust-gated infrastructure.
+                            {t('auth.login_subtitle')}
                         </p>
                     </div>
 
@@ -100,6 +102,16 @@ export const Login = () => {
                             <div className="h-[1px] flex-1 bg-slate-100" />
                         </div>
                     </form>
+
+                    <div className="text-center">
+                        <button
+                            type="button"
+                            onClick={() => setShowConsent(true)}
+                            className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em] hover:text-emerald-700 transition-colors"
+                        >
+                            View DPDP Consent Directive
+                        </button>
+                    </div>
 
                     <p className="text-center text-xs text-slate-400 font-medium">
                         Confidential Platform. Unauthorized access is forensically tracked.
