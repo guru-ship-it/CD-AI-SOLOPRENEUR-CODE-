@@ -38,3 +38,6 @@ dummy_pdf_output.txt
 
 # Antigravity/System
 .gemini/
+workspace-key.json
+.cache/
+**/cloudcode_cli
