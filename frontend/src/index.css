@@ -1,1 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
+
+@layer utilities {
+
+    /* 1. The Glass Panel (Standard Card) */
+    .glass-panel {
+        @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-2xl;
+    }
+
+    /* 2. The "Active" Glass (Selected Items) */
+    .glass-active {
+        @apply bg-emerald-50/80 text-emerald-700 border border-emerald-100/50 font-semibold;
+    }
+
+    /* 3. The Watermark Layer */
+    .glass-watermark {
+        @apply fixed inset-0 pointer-events-none z-[9999] opacity-[0.03] select-none;
+    }
+
+    .tabular-nums {
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+:root {
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+}

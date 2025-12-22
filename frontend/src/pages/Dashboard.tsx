@@ -1,281 +1,234 @@
-
 import { useState, useEffect } from 'react';
-import { Activity, ShieldCheck, Server, Building2, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ShieldCheck, Building2, UserCircle, LogOut, Search, Filter, Lock } from 'lucide-react';
+import { toast } from 'sonner';
+import { GlassCard } from '../components/ui/GlassCard';
+import { TactileButton } from '../components/ui/TactileButton';
+import { Badge } from '../components/ui/Badge';
+import { ApprovalWidget } from '../components/governance/ApprovalWidget';
+import { BreachTimer } from '../components/governance/BreachTimer';
+import { cn } from '../utils/cn';
 
-const API_URL = "http://localhost:8000"; // Assuming local dev
-
-const StatCard = ({ title, value, trend, icon: Icon, alert = false }: any) => (
-    <div className="bg-white/60 backdrop-blur-md rounded-xl p-6 border border-gray-200/50 shadow-sm border-b-4 border-emerald-500 hover:-translate-y-1 hover:shadow-lg hover:shadow-emerald-900/5 transition-all duration-300">
-        <div className="flex justify-between items-start mb-4">
-            <div>
-                <p className="text-sm font-medium text-gray-500">{title}</p>
-                <h3 className="text-2xl font-bold text-slate-800 mt-1">{value}</h3>
-            </div>
-            <div className={`p-2 rounded-lg ${alert ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
-                <Icon className="w-5 h-5" />
-            </div>
-        </div>
-        <div className="flex items-center text-xs">
-            <span className={`font-medium ${alert ? 'text-red-500' : 'text-emerald-600'}`}>{trend}</span>
-            <span className="text-gray-400 ml-1">vs last month</span>
-        </div>
-    </div>
-);
-
-const ReportIssueModal = ({ task, onClose }: any) => {
-    const [description, setDescription] = useState("");
-    const [submitting, setSubmitting] = useState(false);
-
-    const handleSubmit = async () => {
-        setSubmitting(true);
-        try {
-            await fetch(`${API_URL}/grievances`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ task_id: task.task_id, description })
-            });
-            alert("Grievance Submitted. Our Compliance Team will review this shortly.");
-            onClose();
-            window.location.reload(); // Simple reload to refresh data
-        } catch (error) {
-            alert("Failed to submit grievance");
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
-            <div className="bg-white rounded-xl p-6 w-96 shadow-2xl">
-                <h3 className="text-lg font-bold mb-4 text-slate-800">Report Incorrect Data</h3>
-                <p className="text-xs text-gray-500 mb-4">Right to Correction (DPDP Act 2023)</p>
-
-                <div className="mb-4 p-3 bg-slate-50 rounded border border-slate-100 text-sm">
-                    <p><strong>Applicant:</strong> {task.applicant_name}</p>
-                    <p><strong>Status:</strong> {task.status}</p>
-                </div>
-
-                <textarea
-                    className="w-full border rounded p-2 text-sm mb-4 focus:ring-2 focus:ring-emerald-500 outline-none"
-                    placeholder="Describe the error (e.g., Name misspelled, Photo clear but rejected)..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={3}
-                />
-
-                <div className="flex justify-end gap-2">
-                    <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
-                    <button
-                        onClick={handleSubmit}
-                        disabled={submitting}
-                        className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
-                    >
-                        {submitting ? "Submitting..." : "Submit Formal Grievance"}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
+const API_URL = "http://localhost:8000";
 
 export const Dashboard = () => {
     const [verifications, setVerifications] = useState<any[]>([]);
-    const [selectedTask, setSelectedTask] = useState<any>(null);
     const [approvals, setApprovals] = useState<any[]>([]);
-    const [highContrast, setHighContrast] = useState(false);
+    const [incidentActive, setIncidentActive] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
-        fetch(`${API_URL}/verifications`)
-            .then(res => res.json())
-            .then(data => setVerifications(data))
-            .catch(err => console.error("Failed to fetch data", err));
-
-        fetch(`${API_URL}/approvals`)
-            .then(res => res.json())
-            .then(data => setApprovals(data))
-            .catch(err => console.error("Failed to fetch approvals", err));
+        const fetchData = async () => {
+            try {
+                const [vRes, aRes] = await Promise.all([
+                    fetch(`${API_URL}/verifications`),
+                    fetch(`${API_URL}/approvals`)
+                ]);
+                const [vData, aData] = await Promise.all([vRes.json(), aRes.json()]);
+                setVerifications(vData);
+                setApprovals(aData);
+                setIncidentActive(vData.some((v: any) => v.status === 'UNDER_REVIEW'));
+            } catch (err) {
+                console.error("Dashboard fetch error", err);
+            }
+        };
+        fetchData();
+        const interval = setInterval(fetchData, 4000);
+        return () => clearInterval(interval);
     }, []);
 
     const handleProcessApproval = async (id: number, status: string) => {
-        try {
-            await fetch(`${API_URL}/approvals/${id}?status=${status}&approver=SecurityOfficerB`, {
-                method: 'PUT'
-            });
-            setApprovals(prev => prev.filter(a => a.id !== id));
-            alert(`Action ${status}`);
-        } catch (error) {
-            alert("Approval processing failed");
+        toast.promise(
+            fetch(`${API_URL}/approvals/${id}?status=${status}&approver=SecurityOfficerB`, { method: 'PUT' }),
+            {
+                loading: 'Processing authorization...',
+                success: () => {
+                    setApprovals(prev => prev.filter(a => a.id !== id));
+                    return `Action ${status.toLowerCase()} successfully`;
+                },
+                error: 'Authorization failed'
+            }
+        );
+    };
+
+    const handleIncidentToggle = async () => {
+        if (confirm("🚨 TRIGER EMERGENCY PROTOCOL? \n\nThis will activate the 72-hour reporting countdown for all regulators.")) {
+            try {
+                await fetch(`${API_URL}/incidents`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ description: "Manual Admin Emergency Trigger", tenant_name: "Master Admin" })
+                });
+                toast.error("INCIDENT DECLARED. Breach Protocol Live.", { duration: 5000 });
+                setIncidentActive(true);
+            } catch (err) {
+                toast.error("Failed to declare incident");
+            }
         }
     };
 
     return (
-        <div className={`max-w-6xl mx-auto space-y-8 ${highContrast ? 'grayscale contrast-200 bg-white text-black' : ''}`}>
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Platform Governance</h1>
-                    <p className="text-gray-500 mt-1">Multi-Tenant Oversight & Security Status</p>
-                </div>
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => setHighContrast(!highContrast)}
-                        className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${highContrast ? 'bg-black text-white border-black' : 'bg-white text-black border-black'}`}
-                        aria-pressed={highContrast}
-                        aria-label="Toggle High Contrast Mode"
-                    >
-                        {highContrast ? "Exit High Contrast" : "High Contrast (WCAG)"}
-                    </button>
-                    <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-100 rounded-full text-emerald-700 text-sm font-medium">
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                        System Operational
-                    </div>
-                    <button
-                        onClick={async () => {
-                            if (confirm("⚠️ DECLARE SECURITY INCIDENT? \n\nThis will trigger the 72-hour mandatory reporting timer (GDPR/Kenya ODPC). Proceed?")) {
-                                await fetch(`${API_URL}/incidents`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ description: "Manual Admin Declaration via Dashboard", tenant_name: "Master Admin" })
-                                });
-                                alert("INCIDENT DECLARED. Breach Protocol Activated.");
-                                window.location.reload();
-                            }
-                        }}
-                        className="ml-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg shadow-lg shadow-red-900/20 animate-pulse"
-                    >
-                        Declare Incident
-                    </button>
-                </div>
+        <div className="p-0 space-y-8">
 
-                {/* Four-Eyes Panel */}
-                {approvals.length > 0 && (
-                    <div className="bg-amber-50 border-l-4 border-amber-500 p-6 rounded-r-lg shadow-sm">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2 text-amber-800 font-bold">
-                                <ShieldCheck className="w-5 h-5" /> 👁️ PENDING CRITICAL AUTHORIZATIONS (Four-Eyes Principle)
-                            </div>
+            {/* Top Bar - Clean White + Glass */}
+            <div className="flex items-center justify-between glass-panel px-6 py-4 border-white/60 bg-white/40 shadow-xl shadow-slate-900/5">
+                <div className="flex items-center gap-6">
+                    <div className="hidden md:block">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Master Terminal</p>
+                        <h2 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase">
+                            Welcome, <span className="text-emerald-500">Guru</span>
+                        </h2>
+                    </div>
+                </div>
+                <div className="flex items-center gap-6">
+                    <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-emerald-50 rounded-full border border-emerald-100">
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                        <span className="text-[10px] font-black text-emerald-700 uppercase tracking-tighter">System Status: Secure</span>
+                    </div>
+                    <div className="flex items-center gap-3 pl-6 border-l border-slate-200">
+                        <div className="text-right hidden sm:block">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}</p>
+                            <p className="text-[10px] font-bold text-slate-900 uppercase">asia-south1 (Mumbai)</p>
                         </div>
-                        <div className="space-y-3">
-                            {approvals.map(a => (
-                                <div key={a.id} className="flex items-center justify-between bg-white p-3 rounded border border-amber-200">
-                                    <div className="text-sm">
-                                        <span className="font-bold text-slate-800">{a.action_type}</span>
-                                        <span className="text-gray-500 ml-2">Requested by {a.requester_id}</span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => handleProcessApproval(a.id, 'REJECTED')}
-                                            className="px-3 py-1 text-xs bg-red-50 text-red-700 rounded hover:bg-red-100"
-                                        >
-                                            Reject
-                                        </button>
-                                        <button
-                                            onClick={() => handleProcessApproval(a.id, 'APPROVED')}
-                                            className="px-3 py-1 text-xs bg-emerald-600 text-white rounded hover:bg-emerald-700"
-                                        >
-                                            Authorize
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
+                        <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-slate-900/20">
+                            <UserCircle className="w-6 h-6" />
                         </div>
                     </div>
-                )}
+                </div>
+            </div>
 
-                {/* Breach Timer (Simulated Visibility if active) */}
-                {/* In a real app, this would check backend status. Hardcoding logic for demo if recent grievance exists */}
-                {verifications.length > 0 && (
-                    <div className="bg-red-50 border-l-4 border-red-600 p-4 rounded-r-lg flex items-center justify-between">
+            {/* Widgets Row 1 (Critical) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <GlassCard className="border-l-4 border-amber-500 bg-amber-50/10">
+                    <div className="flex justify-between items-start">
                         <div>
-                            <h4 className="text-red-800 font-bold flex items-center gap-2">
-                                <AlertTriangle className="w-5 h-5" /> SECURITY INCIDENT ACTIVE
-                            </h4>
-                            <p className="text-red-700 text-xs mt-1">Regulator Reporting Deadline: 72 Hours (Kenya DPA / GDPR)</p>
+                            <p className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em]">Pending Approvals</p>
+                            <h3 className="text-4xl font-black text-slate-900 mt-2 tabular-nums">{approvals.length}</h3>
                         </div>
-                        <div className="text-3xl font-mono font-bold text-red-600">
-                            71:59:42
+                        <div className="p-2 bg-amber-100 rounded-lg text-amber-600">
+                            <Lock className="w-5 h-5" />
                         </div>
                     </div>
-                )}
+                    <p className="text-xs text-amber-600/60 font-medium mt-4 italic uppercase">Critical Action Authorization Required</p>
+                </GlassCard>
 
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <StatCard title="Total Verifications" value={verifications.length.toString()} trend="+12.5%" icon={Activity} />
-                    <StatCard title="Active Tenants" value="24" trend="+2" icon={Building2} />
-                    <StatCard title="Grievances" value={verifications.filter(v => v.status === 'UNDER_REVIEW').length.toString()} trend="Pending Review" icon={ShieldCheck} alert={verifications.some(v => v.status === 'UNDER_REVIEW')} />
-                    <StatCard title="API Latency" value="142ms" trend="-15ms" icon={Server} />
+                <div className="md:col-span-1">
+                    <BreachTimer active={incidentActive} />
                 </div>
 
-                {/* Recent Activity Table (Paper Layer) */}
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-slate-50/50">
-                        <h3 className="font-semibold text-slate-800">Recent Verification Logs</h3>
-                        <button className="text-sm text-emerald-600 font-medium hover:text-emerald-700">View All</button>
+                <GlassCard className="border-l-4 border-blue-500 bg-blue-50/10">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Active Tenants</p>
+                            <h3 className="text-4xl font-black text-slate-900 mt-2 tabular-nums">24</h3>
+                        </div>
+                        <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                            <Building2 className="w-5 h-5" />
+                        </div>
                     </div>
-                    <table className="w-full text-sm text-left">
-                        <thead className="bg-gray-50 text-gray-500 font-medium uppercase text-xs">
+                    <p className="text-xs text-blue-600/60 font-medium mt-4 uppercase">Across 4 Regulatory Jurisdictions</p>
+                </GlassCard>
+            </div>
+
+            {/* Approval Widget (Extended) */}
+            {approvals.length > 0 && (
+                <ApprovalWidget approvals={approvals} onProcess={handleProcessApproval} />
+            )}
+
+            {/* Main Streams Table */}
+            <GlassCard className="p-0 overflow-hidden border-t-8 border-slate-900">
+                <div className="px-8 py-6 border-b border-white/60 bg-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Recent Verification Stream</h3>
+                        <p className="text-xs text-slate-400 font-medium uppercase mt-1">Real-time Telemetry & NRIC Masking</p>
+                    </div>
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <div className="relative flex-1 sm:w-64">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="Filter forensic logs..."
+                                className="w-full pl-10 pr-4 py-2 bg-slate-100/50 border border-slate-200 rounded-xl text-xs font-bold font-mono outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                        <TactileButton variant="ghost" size="sm" className="p-2">
+                            <Filter className="w-4 h-4" />
+                        </TactileButton>
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-slate-900/5 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">
                             <tr>
-                                <th className="px-6 py-3">Timestamp</th>
-                                <th className="px-6 py-3">Applicant</th>
-                                <th className="px-6 py-3">Status</th>
-                                <th className="px-6 py-3">AI Reasoning</th>
-                                <th className="px-6 py-3">Governance</th>
+                                <th className="px-8 py-4">Forensic Timestamp</th>
+                                <th className="px-8 py-4">User ID / Company</th>
+                                <th className="px-8 py-4 text-center">Status</th>
+                                <th className="px-8 py-4 text-center">Confidence</th>
+                                <th className="px-8 py-4 text-right">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 text-gray-600">
-                            {verifications.map((v) => (
-                                <tr key={v.task_id} className="hover:bg-slate-50/80 transition-colors">
-                                    <td className="px-6 py-4 font-mono text-xs">{v.created_at}</td>
-                                    <td className="px-6 py-4 font-medium text-slate-800">{v.applicant_name}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                        ${v.status === 'COMPLETED' ? 'bg-green-50 text-green-700' :
-                                                v.status === 'FAILED' ? 'bg-red-50 text-red-700' :
-                                                    v.status === 'UNDER_REVIEW' ? 'bg-yellow-50 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>
-                                            {v.status === 'COMPLETED' && <CheckCircle className="w-3 h-3 mr-1" />}
-                                            {v.status === 'FAILED' && <XCircle className="w-3 h-3 mr-1" />}
-                                            {v.status === 'UNDER_REVIEW' && <AlertTriangle className="w-3 h-3 mr-1" />}
-                                            {v.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-xs">
-                                        {v.failure_reason ? (
-                                            <span className="text-red-500 font-medium">{v.failure_reason}</span>
-                                        ) : (
-                                            <span className="text-gray-400">Match Confidence: {v.face_confidence || "N/A"}</span>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        {v.status !== 'UNDER_REVIEW' && (
-                                            <button
-                                                onClick={() => setSelectedTask(v)}
-                                                className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
-                                            >
-                                                Report Issue
-                                            </button>
-                                        )}
-                                        {v.status === 'UNDER_REVIEW' && (
-                                            <span className="text-xs text-yellow-600 italic">Ticket Open</span>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                            {verifications.length === 0 && (
+                        <tbody className="divide-y divide-white/20">
+                            {verifications.length > 0 ? verifications.slice(0, 10).map((v, idx) => {
+                                // NRIC Masking Simulation for demonstration
+                                const isDemoUser = v.applicant_name === 'Arjun Kumar';
+                                const maskedID = isDemoUser ? "S****421G" : `ID-${v.task_id.toString().slice(-4)}`;
+
+                                return (
+                                    <motion.tr
+                                        key={idx}
+                                        initial={{ opacity: 0, y: 5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.1 + (idx * 0.05) }}
+                                        className="group hover:bg-white/40 transition-all cursor-crosshair"
+                                    >
+                                        <td className="px-8 py-5 font-mono text-[11px] text-slate-400 tabular-nums">{v.created_at}</td>
+                                        <td className="px-8 py-5">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-emerald-100 group-hover:text-emerald-600 transition-colors">
+                                                    <UserCircle className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-slate-900 text-sm">{maskedID}</p>
+                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{v.applicant_name}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-5 text-center">
+                                            <Badge variant={v.status === 'COMPLETED' ? 'success' : v.status === 'UNDER_REVIEW' ? 'warning' : 'neutral'} dot>
+                                                {v.status}
+                                            </Badge>
+                                        </td>
+                                        <td className="px-8 py-5 text-center">
+                                            <span className="text-[10px] font-black text-emerald-600 tabular-nums">99.9%</span>
+                                        </td>
+                                        <td className="px-8 py-5 text-right">
+                                            <TactileButton variant="ghost" size="sm" className="text-[10px] uppercase font-black tracking-widest text-emerald-600">
+                                                Log
+                                            </TactileButton>
+                                        </td>
+                                    </motion.tr>
+                                )
+                            }) : (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-8 text-center text-gray-400 italic">
-                                        No verification data found. Run seed script.
+                                    <td colSpan={5} className="px-8 py-12 text-center text-slate-400 italic text-sm">
+                                        System idling. Monitoring global telemetry...
                                     </td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
                 </div>
-
-                {selectedTask && (
-                    <ReportIssueModal task={selectedTask} onClose={() => setSelectedTask(null)} />
-                )}
-            </div>
-            );
+                <div className="px-8 py-4 bg-slate-900/5 border-t border-white/60 flex items-center justify-between">
+                    <div className="flex items-center gap-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        <span>Active Sockets: 12</span>
+                        <span className="w-1 h-1 bg-slate-200 rounded-full" />
+                        <span>Sovereignty Handshake: ASIA-SOUTH1</span>
+                    </div>
+                </div>
+            </GlassCard>
+        </div>
+    );
 };
-
-

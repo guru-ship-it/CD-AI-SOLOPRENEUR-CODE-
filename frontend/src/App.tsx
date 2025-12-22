@@ -4,27 +4,31 @@ import { AuthProvider } from './context/AuthContext';
 import { LandingPage } from './pages/LandingPage';
 import { Dashboard } from './pages/Dashboard';
 import { TenantManager } from './pages/TenantManager';
+import { Login } from './pages/Login';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { useSessionTimeout } from './hooks/useSessionTimeout';
 import { CookieConsent } from './components/ui/CookieConsent';
 import { WatermarkOverlay } from './components/security/WatermarkOverlay';
+import { Toaster } from 'sonner';
 
-// Wrapper component to use the hook inside Router context
 const AppContent = () => {
   useSessionTimeout();
 
   return (
-    <WatermarkOverlay>
-      <CookieConsent />
-      <Routes>
-
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/dashboard" element={<DashboardLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="tenants" element={<TenantManager />} />
-        </Route>
-      </Routes>
-    </WatermarkOverlay>
+    <div className="min-h-screen bg-slate-50 selection:bg-emerald-100 selection:text-emerald-900">
+      <Toaster position="top-right" expand={false} richColors closeButton />
+      <WatermarkOverlay>
+        <CookieConsent />
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/dashboard" element={<DashboardLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="tenants" element={<TenantManager />} />
+          </Route>
+        </Routes>
+      </WatermarkOverlay>
+    </div>
   );
 };
 

@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Logo } from '../Logo';
 import { LayoutDashboard, FileText, CreditCard, Activity, Server, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { cn } from '../../utils/cn';
 
 // Custom Icons
 const IconTenant = () => (

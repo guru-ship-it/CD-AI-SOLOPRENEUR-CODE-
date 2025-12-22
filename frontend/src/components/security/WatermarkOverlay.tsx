@@ -19,7 +19,7 @@ export const WatermarkOverlay: React.FC<{ children: React.ReactNode }> = ({ chil
         <div className="relative min-h-screen">
             {/* Watermark Base Layer */}
             <div
-                className="fixed inset-0 z-[9999] pointer-events-none opacity-[0.03] select-none overflow-hidden flex flex-wrap content-start justify-center"
+                className="glass-watermark overflow-hidden flex flex-wrap content-start justify-center"
                 aria-hidden="true"
             >
                 {Array.from({ length: 100 }).map((_, i) => (
