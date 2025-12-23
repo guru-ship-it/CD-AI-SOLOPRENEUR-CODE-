@@ -63,8 +63,27 @@ export const verifyDocument = onCall({ secrets: [proteanApiKey, proteanBearerTok
             }
         });
 
-        // 6. Normalize & Return
-        return adapter.normalizeResponse(response.data);
+        // 6. Normalize
+        const normalized = adapter.normalizeResponse(response.data);
+
+        // 7. Persist Record (The Audit Proof Foundation)
+        const verificationId = `CERT_${admin.firestore().collection('verifications').doc().id}`;
+        await admin.firestore().collection('verifications').doc(verificationId).set({
+            tenantId,
+            userId: auth.uid,
+            type,
+            inputs: inputs, // Store inputs for certificate (masked later)
+            result: normalized,
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            status: normalized.isValid ? 'VALID' : 'FAILED',
+            sourceAuthority: adapter.sourceAuthority || 'National Database'
+        });
+
+        // 8. Return Normalized Result with Verification ID
+        return {
+            ...normalized,
+            verificationId
+        };
 
     } catch (error: any) {
         console.error(`Protean Verification Failed [${type}]:`, error);

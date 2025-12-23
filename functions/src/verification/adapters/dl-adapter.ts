@@ -3,6 +3,7 @@ import { VerificationAdapter, StandardResult } from "../interface";
 export class DLAdapter implements VerificationAdapter {
     endpoint = "https://uat.risewithprotean.io/api/v2/dl/verify";
     method: "POST" = "POST";
+    sourceAuthority = "MoRTH (Parivahan)";
 
     buildRequest(inputs: any) {
         // DL API is stricter: Needs DOB

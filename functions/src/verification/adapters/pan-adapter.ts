@@ -3,6 +3,7 @@ import { VerificationAdapter, StandardResult } from "../interface";
 export class PanAdapter implements VerificationAdapter {
     endpoint = "https://uat.risewithprotean.io/api/v2/pan/verify";
     method: "POST" = "POST";
+    sourceAuthority = "NSDL / Protean";
 
     buildRequest(inputs: any) {
         return { pan: inputs.idNumber }; // PAN API expects simple { pan: "..." }

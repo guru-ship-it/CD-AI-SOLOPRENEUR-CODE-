@@ -10,6 +10,7 @@ export interface VerificationAdapter {
     type?: string; // Optional if handled by registry
     endpoint: string;
     method: "POST" | "GET";
+    sourceAuthority: string;
 
     // Transform Frontend inputs -> Protean API specific JSON
     buildRequest(inputs: any): object;

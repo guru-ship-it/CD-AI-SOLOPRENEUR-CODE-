@@ -3,7 +3,7 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../firebase';
 import { GlassCard } from '../components/ui/GlassCard';
 import { TactileButton } from '../components/ui/TactileButton';
-import { ShieldCheck, User, FileText, Smartphone, Scan, ShieldAlert, Layers, Command } from 'lucide-react';
+import { ShieldCheck, User, FileText, Smartphone, Scan, ShieldAlert, Layers, Command, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WalletWidget } from '../components/billing/WalletWidget';
@@ -68,6 +68,26 @@ export const VerificationTerminal: React.FC = () => {
             toast.success(`Batch ${response.data.batchId} initiated. Processing ${items.length} items.`);
         } catch (error: any) {
             toast.error(error.message || 'Batch Submission Failed');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDownloadCertificate = async (verificationId: string) => {
+        if (!verificationId) return;
+        setLoading(true);
+        try {
+            const genFn = httpsCallable(functions, 'generateCertificate');
+            const response: any = await genFn({ verificationId });
+            if (response.data?.downloadUrl) {
+                window.open(response.data.downloadUrl, '_blank');
+                toast.success('Certificate Generated Successfully');
+            } else {
+                throw new Error('No download URL returned');
+            }
+        } catch (error: any) {
+            console.error('Download Error:', error);
+            toast.error(error.message || 'Failed to generate certificate');
         } finally {
             setLoading(false);
         }
@@ -271,8 +291,8 @@ export const VerificationTerminal: React.FC = () => {
                                         </div>
                                     )}
 
-                                    <div className="mt-6 pt-4 border-t border-slate-900/10">
-                                        <details className="cursor-pointer group outline-none">
+                                    <div className="mt-6 pt-4 border-t border-slate-900/10 flex justify-between items-center">
+                                        <details className="cursor-pointer group outline-none flex-1">
                                             <summary className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-slate-900 transition-colors list-none">
                                                 View Forensic Audit Trail (Raw Response)
                                             </summary>
@@ -280,6 +300,17 @@ export const VerificationTerminal: React.FC = () => {
                                                 {JSON.stringify(result.rawResponse || result, null, 2)}
                                             </pre>
                                         </details>
+
+                                        {result.verificationId && (
+                                            <TactileButton
+                                                variant="primary"
+                                                size="sm"
+                                                onClick={() => handleDownloadCertificate(result.verificationId)}
+                                                disabled={loading}
+                                            >
+                                                {loading ? 'Generating...' : 'Download Audit Proof'}
+                                            </TactileButton>
+                                        )}
                                     </div>
                                 </GlassCard>
                             </motion.div>
