@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyIdentity = exports.checkApiHealth = exports.processBatch = exports.generateCertificate = exports.processCrimeCheck = exports.aggregateHourlyStats = exports.checkAndDeductCredits = exports.topUpWallet = exports.verifyDocument = exports.whatsappWebhook = exports.adminSuperLogin = exports.bleachOldDocs = void 0;
+exports.verifyIdentity = exports.sendDailyReport = exports.checkApiHealth = exports.processBatch = exports.generateCertificate = exports.processCrimeCheck = exports.aggregateHourlyStats = exports.checkAndDeductCredits = exports.topUpWallet = exports.verifyDocument = exports.whatsappWebhook = exports.adminSuperLogin = exports.bleachOldDocs = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const scheduler_1 = require("firebase-functions/v2/scheduler");
 const logger = __importStar(require("firebase-functions/logger"));
@@ -81,6 +81,8 @@ var batch_1 = require("./verification/batch");
 Object.defineProperty(exports, "processBatch", { enumerable: true, get: function () { return batch_1.processBatch; } });
 var health_1 = require("./health");
 Object.defineProperty(exports, "checkApiHealth", { enumerable: true, get: function () { return health_1.checkApiHealth; } });
+var notifications_v2_1 = require("./notifications_v2");
+Object.defineProperty(exports, "sendDailyReport", { enumerable: true, get: function () { return notifications_v2_1.sendDailyReport; } });
 exports.verifyIdentity = (0, https_1.onCall)({ region: "asia-south1" }, async (request) => {
     return { status: "VERIFIED", message: "TypeScript Proxy Active (v2)" };
 });

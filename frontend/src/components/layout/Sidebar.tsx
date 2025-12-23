@@ -108,17 +108,16 @@ export const Sidebar = () => {
     return (
         <aside className={cn(
             "fixed left-4 top-4 bottom-4 w-64 z-50 transition-all duration-500",
-            !isMFAVerified && "blur-xl pointer-events-none opacity-50 scale-95"
         )}>
-            <div className="h-full flex flex-col bg-white/80 backdrop-blur-2xl border border-white/40 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] rounded-[2rem] overflow-hidden">
+            <div className="h-full flex flex-col bg-[#1E293B]/40 backdrop-blur-2xl border border-white/5 shadow-2xl rounded-[2rem] overflow-hidden transition-all">
 
                 {/* Header/Logo */}
                 <div className="p-8 pb-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-600/20">
+                        <div className="w-8 h-8 bg-[#4285F4] rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
                             <ShieldCheck className="w-5 h-5 text-white" />
                         </div>
-                        <span className="font-bold text-slate-900 tracking-tight text-lg">CDC AI</span>
+                        <span className="font-bold text-white tracking-tight text-lg">CDC AI</span>
                     </div>
                 </div>
 
@@ -137,8 +136,8 @@ export const Sidebar = () => {
                                     className={({ isActive }) => cn(
                                         "flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-300 group",
                                         isActive
-                                            ? "bg-slate-900 text-white shadow-xl shadow-slate-900/10"
-                                            : "text-slate-500 hover:bg-slate-100/50 hover:text-slate-900"
+                                            ? "bg-[#4285F4] text-white shadow-xl shadow-blue-500/20"
+                                            : "text-slate-400 hover:bg-white/5 hover:text-white"
                                     )}
                                 >
                                     <span className={cn(
@@ -156,17 +155,17 @@ export const Sidebar = () => {
 
                 {/* User Profile Section */}
                 <div className="p-4 mt-auto">
-                    <div className="rounded-3xl bg-slate-50/80 border border-slate-100 p-4 transition-all hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 group">
+                    <div className="rounded-3xl bg-[#0F172A]/40 border border-white/5 p-4 transition-all hover:bg-white/5 hover:shadow-2xl hover:shadow-slate-900 group">
                         <div className="flex items-center gap-3">
                             <div className="relative">
                                 {user?.photoURL ? (
                                     <img
                                         src={user.photoURL}
                                         alt={user.name}
-                                        className="w-10 h-10 rounded-2xl object-cover ring-2 ring-white shadow-sm"
+                                        className="w-10 h-10 rounded-2xl object-cover ring-2 ring-white/10 shadow-sm"
                                     />
                                 ) : (
-                                    <div className="w-10 h-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-bold">
+                                    <div className="w-10 h-10 rounded-2xl bg-[#4285F4] text-white flex items-center justify-center font-bold">
                                         {user?.name.charAt(0)}
                                     </div>
                                 )}
@@ -178,7 +177,7 @@ export const Sidebar = () => {
                             </div>
 
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-slate-900 truncate tracking-tight">
+                                <p className="text-sm font-bold text-white truncate tracking-tight">
                                     {user?.name}
                                 </p>
                                 <p className="text-[10px] font-medium text-slate-500 truncate font-mono">
@@ -187,16 +186,16 @@ export const Sidebar = () => {
                             </div>
                         </div>
 
-                        <div className="mt-3 flex items-center justify-between pt-3 border-t border-slate-200/60">
+                        <div className="mt-3 flex items-center justify-between pt-3 border-t border-white/5">
                             <div className={cn(
                                 "inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider",
                                 user?.role === 'MASTER_ADMIN'
-                                    ? "bg-blue-50 text-blue-600 border border-blue-100"
-                                    : "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                                    ? "bg-[#4285F4]/10 text-[#4285F4] border border-[#4285F4]/20"
+                                    : "bg-[#34A853]/10 text-[#34A853] border border-[#34A853]/20"
                             )}>
                                 {user?.role === 'MASTER_ADMIN' ? 'Master Admin' : 'Company Admin'}
                             </div>
-                            <button className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-900 transition-colors">
+                            <button className="p-1.5 rounded-lg text-slate-500 hover:bg-white/5 hover:text-white transition-colors">
                                 <Settings className="w-3.5 h-3.5" />
                             </button>
                         </div>

@@ -46,36 +46,34 @@ exports.checkApiHealth = (0, scheduler_1.onSchedule)({
 }, async (event) => {
     const statusRef = admin.firestore().collection("system_settings").doc("status");
     let proteanStatus = "ONLINE";
-    let digilockerStatus = "ONLINE";
     let alertMessage = "";
     const proteanStart = Date.now();
     try {
         const response = await (0, api_client_1.resilientCall)({
             method: 'GET',
             url: "https://uat.risewithprotean.io/api/v2/pan/health",
-            timeout: 5000
+            timeout: 6000
         });
         const latency = Date.now() - proteanStart;
-        if (latency > 3000) {
+        if (latency > 5000) {
             proteanStatus = "DEGRADED";
-            alertMessage = "NSDL is experiencing higher than usual latency.";
+            alertMessage = "Govt API experiencing high latency.";
         }
         else if (response.status !== 200) {
             proteanStatus = "DOWN";
-            alertMessage = "NSDL Services are currently unavailable.";
+            alertMessage = "Service Unavailable.";
         }
     }
     catch (error) {
         logger.error("Protean Health Check Failed:", error.message);
         proteanStatus = "DOWN";
-        alertMessage = "NSDL Services are currently offline.";
+        alertMessage = "Service Unavailable.";
     }
     await statusRef.set({
         protean_status: proteanStatus,
-        digilocker_status: digilockerStatus,
-        global_alert: alertMessage,
+        message: alertMessage,
         updated_at: admin.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
-    logger.info(`Health Check Completed: Protean=${proteanStatus}, DigiLocker=${digilockerStatus}`);
+    logger.info(`Health Check Completed: Protean=${proteanStatus}`);
 });
 //# sourceMappingURL=health.js.map

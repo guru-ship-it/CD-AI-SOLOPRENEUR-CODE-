@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin';
 import * as logger from 'firebase-functions/logger';
 import { Wallet, Transaction, VERIFICATION_COST } from './interface';
-import { sendWhatsAppMessage } from '../whatsapp';
+import { sendLowBalanceEmail, sendWhatsAppAlert } from '../notifications';
 
 const WALLETS_COLLECTION = 'wallets';
 
@@ -24,7 +24,7 @@ export class BillingService {
                     tenantId,
                     balance: 0,
                     currency: 'INR',
-                    lowBalanceThreshold: 1000,
+                    lowBalanceThreshold: 500,
                 };
                 transaction.set(walletRef, newWallet);
                 throw new Error('INSUFFICIENT_BALANCE: New wallet created with 0 balance.');
@@ -50,9 +50,21 @@ export class BillingService {
             transaction.update(walletRef, { balance: newBalance });
             transaction.set(txRef, newTransaction);
 
-            // Low Balance Alert Check
+            // Low Balance Alert Check (Omni-Channel Notification)
             if (newBalance <= wallet.lowBalanceThreshold) {
                 logger.warn(`LOW_BALANCE: Tenant ${tenantId} reached threshold. Current: ${newBalance}`);
+
+                // Fire and forget (don't block the transaction for network calls)
+                if (wallet.contactEmail) {
+                    sendLowBalanceEmail(wallet.contactEmail, newBalance).catch(e =>
+                        logger.error("Failed to send low balance email:", e)
+                    );
+                }
+                if (wallet.contactPhone) {
+                    sendWhatsAppAlert(wallet.contactPhone, newBalance).catch(e =>
+                        logger.error("Failed to send low balance WhatsApp:", e)
+                    );
+                }
             }
         });
     }

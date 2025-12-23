@@ -37,13 +37,14 @@ exports.verifyDocument = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const api_client_1 = require("./api-client");
 const admin = __importStar(require("firebase-admin"));
-const params_1 = require("firebase-functions/params");
 const registry_1 = require("./registry");
 const service_1 = require("../billing/service");
 const interface_1 = require("../billing/interface");
-const proteanApiKey = (0, params_1.defineSecret)("PROTEAN_API_KEY");
-const proteanBearerToken = (0, params_1.defineSecret)("PROTEAN_BEARER_TOKEN");
-exports.verifyDocument = (0, https_1.onCall)({ secrets: [proteanApiKey, proteanBearerToken], region: "asia-south1" }, async (request) => {
+const secrets_1 = require("../secrets");
+exports.verifyDocument = (0, https_1.onCall)({
+    secrets: [secrets_1.proteanApiKey, secrets_1.proteanBearerToken, secrets_1.sendgridKey, secrets_1.waToken, secrets_1.waPhoneId],
+    region: "asia-south1"
+}, async (request) => {
     const { type, inputs } = request.data;
     const auth = request.auth;
     if (!auth) {
@@ -82,8 +83,8 @@ exports.verifyDocument = (0, https_1.onCall)({ secrets: [proteanApiKey, proteanB
             data: payload,
             headers: {
                 'content-type': 'application/json',
-                'apikey': proteanApiKey.value(),
-                'Authorization': `Bearer ${proteanBearerToken.value()}`
+                'apikey': secrets_1.proteanApiKey.value(),
+                'Authorization': `Bearer ${secrets_1.proteanBearerToken.value()}`
             }
         });
         const normalized = adapter.normalizeResponse(response.data);
@@ -98,6 +99,10 @@ exports.verifyDocument = (0, https_1.onCall)({ secrets: [proteanApiKey, proteanB
             status: normalized.isValid ? 'VALID' : 'FAILED',
             sourceAuthority: adapter.sourceAuthority || 'National Database'
         });
+        if (!normalized.isValid) {
+            const { notifyRejection } = require("../notifications_v2");
+            notifyRejection(tenantId, inputs, normalized.error || "Document data mismatch").catch((e) => console.error("Failed to trigger rejection alert:", e.message));
+        }
         return {
             ...normalized,
             verificationId

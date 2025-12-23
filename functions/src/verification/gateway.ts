@@ -1,15 +1,15 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { resilientCall } from "./api-client";
 import * as admin from "firebase-admin";
-import { defineSecret } from "firebase-functions/params";
 import { ADAPTER_REGISTRY } from "./registry";
 import { checkAndDeductCredits } from "../billing/service";
 import { VERIFICATION_COST } from "../billing/interface";
+import { proteanApiKey, proteanBearerToken, sendgridKey, waToken, waPhoneId } from "../secrets";
 
-const proteanApiKey = defineSecret("PROTEAN_API_KEY");
-const proteanBearerToken = defineSecret("PROTEAN_BEARER_TOKEN");
-
-export const verifyDocument = onCall({ secrets: [proteanApiKey, proteanBearerToken], region: "asia-south1" }, async (request) => {
+export const verifyDocument = onCall({
+    secrets: [proteanApiKey, proteanBearerToken, sendgridKey, waToken, waPhoneId],
+    region: "asia-south1"
+}, async (request) => {
     const { type, inputs } = request.data;
     const auth = request.auth;
 
@@ -66,7 +66,6 @@ export const verifyDocument = onCall({ secrets: [proteanApiKey, proteanBearerTok
         // 6. Normalize
         const normalized = adapter.normalizeResponse(response.data);
 
-        // 7. Persist Record (The Audit Proof Foundation)
         const verificationId = `CERT_${admin.firestore().collection('verifications').doc().id}`;
         await admin.firestore().collection('verifications').doc(verificationId).set({
             tenantId,
@@ -79,7 +78,15 @@ export const verifyDocument = onCall({ secrets: [proteanApiKey, proteanBearerTok
             sourceAuthority: adapter.sourceAuthority || 'National Database'
         });
 
-        // 8. Return Normalized Result with Verification ID
+        // 8. Rejection Alert (Instant)
+        if (!normalized.isValid) {
+            const { notifyRejection } = require("../notifications_v2");
+            notifyRejection(tenantId, inputs, normalized.error || "Document data mismatch").catch((e: any) =>
+                console.error("Failed to trigger rejection alert:", e.message)
+            );
+        }
+
+        // 9. Return Normalized Result with Verification ID
         return {
             ...normalized,
             verificationId

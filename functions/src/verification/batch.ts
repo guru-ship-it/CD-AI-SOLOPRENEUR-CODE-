@@ -4,17 +4,14 @@ import { ADAPTER_REGISTRY } from "./registry";
 import { checkAndDeductCredits } from "../billing/service";
 import { VERIFICATION_COST } from "../billing/interface";
 import { resilientCall } from "./api-client";
-import { defineSecret } from "firebase-functions/params";
-
-const proteanApiKey = defineSecret("PROTEAN_API_KEY");
-const proteanBearerToken = defineSecret("PROTEAN_BEARER_TOKEN");
+import { proteanApiKey, proteanBearerToken, sendgridKey, waToken, waPhoneId } from "../secrets";
 
 /**
  * Handles bulk verification requests from a CSV upload.
  * Throttles processing to prevent rate limiting.
  */
 export const processBatch = onCall({
-    secrets: [proteanApiKey, proteanBearerToken],
+    secrets: [proteanApiKey, proteanBearerToken, sendgridKey, waToken, waPhoneId],
     region: "asia-south1",
     timeoutSeconds: 300 // 5 minutes for large batches
 }, async (request) => {
@@ -91,6 +88,14 @@ export const processBatch = onCall({
             });
 
             results.push({ index, success: true, verificationId, isValid: result.isValid });
+
+            // Rejection Alert (Instant)
+            if (!result.isValid) {
+                const { notifyRejection } = require("../notifications_v2");
+                notifyRejection(tenantId, inputs, result.error || "Document data mismatch").catch((e: any) =>
+                    console.error("Failed to trigger rejection alert in batch:", e.message)
+                );
+            }
 
         } catch (error: any) {
             console.error(`Batch item ${index} failed:`, error.message);

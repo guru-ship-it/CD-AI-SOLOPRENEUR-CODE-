@@ -18,45 +18,38 @@ export const checkApiHealth = onSchedule({
 
     // Default Statuses
     let proteanStatus = "ONLINE";
-    let digilockerStatus = "ONLINE";
     let alertMessage = "";
 
     // 1. Check Protean Health
-    // NSDL/Protean UAT Health Endpoint (Mock/Placeholder logic)
     const proteanStart = Date.now();
     try {
         const response = await resilientCall({
             method: 'GET',
             url: "https://uat.risewithprotean.io/api/v2/pan/health",
-            timeout: 5000 // 5 second timeout
+            timeout: 6000 // Slightly longer than threshold to catch latency
         });
 
         const latency = Date.now() - proteanStart;
 
-        if (latency > 3000) {
+        if (latency > 5000) {
             proteanStatus = "DEGRADED";
-            alertMessage = "NSDL is experiencing higher than usual latency.";
+            alertMessage = "Govt API experiencing high latency.";
         } else if (response.status !== 200) {
             proteanStatus = "DOWN";
-            alertMessage = "NSDL Services are currently unavailable.";
+            alertMessage = "Service Unavailable.";
         }
     } catch (error: any) {
         logger.error("Protean Health Check Failed:", error.message);
         proteanStatus = "DOWN";
-        alertMessage = "NSDL Services are currently offline.";
+        alertMessage = "Service Unavailable.";
     }
-
-    // 2. Check DigiLocker (Simulated logic as real endpoints are behind OAuth/IP whitelist)
-    // In production, we'd check their public status page or a lightweight API
-    // const digilockerResponse = await axios.get("...");
 
     // 3. Update Firestore (The Source of Truth)
     await statusRef.set({
         protean_status: proteanStatus,
-        digilocker_status: digilockerStatus,
-        global_alert: alertMessage,
+        message: alertMessage,
         updated_at: admin.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
 
-    logger.info(`Health Check Completed: Protean=${proteanStatus}, DigiLocker=${digilockerStatus}`);
+    logger.info(`Health Check Completed: Protean=${proteanStatus}`);
 });

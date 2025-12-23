@@ -2,15 +2,63 @@
 @import "tailwindcss";
 
 @layer utilities {
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
 
-    /* 1. The Glass Panel (Standard Card) */
-    .glass-panel {
-        @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-2xl;
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
-    /* 2. The "Active" Glass (Selected Items) */
+    .animate-fade-in {
+        animation: fadeIn 0.8s ease-out forwards;
+    }
+
+    /* 1. The Glass Panel (Dark Theme Standard) */
+    .glass-panel {
+        @apply bg-[#1E293B]/70 backdrop-blur-xl border border-white/5 shadow-xl rounded-2xl;
+    }
+
+    /* 2. The "Active" Glass (Google Blue) */
     .glass-active {
-        @apply bg-emerald-50/80 text-emerald-700 border border-emerald-100/50 font-semibold;
+        @apply bg-[#4285F4]/10 text-[#4285F4] border border-[#4285F4]/20 font-bold;
+    }
+
+    /* 3. Google Branding Colors */
+    .text-google-blue {
+        color: #4285F4;
+    }
+
+    .bg-google-blue {
+        background-color: #4285F4;
+    }
+
+    .text-google-green {
+        color: #34A853;
+    }
+
+    .bg-google-green {
+        background-color: #34A853;
+    }
+
+    .text-google-red {
+        color: #EA4335;
+    }
+
+    .bg-google-red {
+        background-color: #EA4335;
+    }
+
+    .text-google-yellow {
+        color: #FBBC05;
+    }
+
+    .bg-google-yellow {
+        background-color: #FBBC05;
     }
 
     /* 3. The Watermark Layer */

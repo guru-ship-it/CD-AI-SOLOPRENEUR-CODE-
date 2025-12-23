@@ -40,11 +40,9 @@ const registry_1 = require("./registry");
 const service_1 = require("../billing/service");
 const interface_1 = require("../billing/interface");
 const api_client_1 = require("./api-client");
-const params_1 = require("firebase-functions/params");
-const proteanApiKey = (0, params_1.defineSecret)("PROTEAN_API_KEY");
-const proteanBearerToken = (0, params_1.defineSecret)("PROTEAN_BEARER_TOKEN");
+const secrets_1 = require("../secrets");
 exports.processBatch = (0, https_1.onCall)({
-    secrets: [proteanApiKey, proteanBearerToken],
+    secrets: [secrets_1.proteanApiKey, secrets_1.proteanBearerToken, secrets_1.sendgridKey, secrets_1.waToken, secrets_1.waPhoneId],
     region: "asia-south1",
     timeoutSeconds: 300
 }, async (request) => {
@@ -85,8 +83,8 @@ exports.processBatch = (0, https_1.onCall)({
                 data: payload,
                 headers: {
                     'content-type': 'application/json',
-                    'apikey': proteanApiKey.value(),
-                    'Authorization': `Bearer ${proteanBearerToken.value()}`
+                    'apikey': secrets_1.proteanApiKey.value(),
+                    'Authorization': `Bearer ${secrets_1.proteanBearerToken.value()}`
                 }
             });
             result = adapter.normalizeResponse(response.data);
@@ -103,6 +101,10 @@ exports.processBatch = (0, https_1.onCall)({
                 sourceAuthority: adapter.sourceAuthority || 'National Database'
             });
             results.push({ index, success: true, verificationId, isValid: result.isValid });
+            if (!result.isValid) {
+                const { notifyRejection } = require("../notifications_v2");
+                notifyRejection(tenantId, inputs, result.error || "Document data mismatch").catch((e) => console.error("Failed to trigger rejection alert in batch:", e.message));
+            }
         }
         catch (error) {
             console.error(`Batch item ${index} failed:`, error.message);

@@ -6,8 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface SystemStatus {
     protean_status: 'ONLINE' | 'DEGRADED' | 'DOWN';
-    digilocker_status: 'ONLINE' | 'DEGRADED' | 'DOWN';
-    global_alert: string;
+    message: string;
 }
 
 export const StatusBanner: React.FC = () => {
@@ -20,7 +19,6 @@ export const StatusBanner: React.FC = () => {
             if (snapshot.exists()) {
                 const data = snapshot.data() as SystemStatus;
                 setStatus(data);
-                // Reset visibility if status changes significantly
                 setIsVisible(true);
             }
         });
@@ -28,18 +26,10 @@ export const StatusBanner: React.FC = () => {
         return () => unsubscribe();
     }, []);
 
-    if (!status || !isVisible) return null;
+    if (!status || !isVisible || status.protean_status === 'ONLINE') return null;
 
-    const isProteanIssue = status.protean_status !== 'ONLINE';
-    const isDigilockerIssue = status.digilocker_status !== 'ONLINE';
-
-    // Priority 1: DOWN (Red)
-    const isDown = status.protean_status === 'DOWN' || status.digilocker_status === 'DOWN';
-
-    // Priority 2: DEGRADED (Amber)
-    const isDegraded = status.protean_status === 'DEGRADED' || status.digilocker_status === 'DEGRADED';
-
-    if (!isDown && !isDegraded) return null;
+    const isDown = status.protean_status === 'DOWN';
+    const isDegraded = status.protean_status === 'DEGRADED';
 
     return (
         <AnimatePresence>
@@ -47,25 +37,27 @@ export const StatusBanner: React.FC = () => {
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                className={`w-full overflow-hidden ${isDown ? 'bg-red-600' : 'bg-amber-500'}`}
+                className={`w-full overflow-hidden backdrop-blur-md border-b border-white/5 transition-colors duration-500 ${isDown ? 'bg-[#EA4335]/90' : 'bg-[#FBBC05]/90'}`}
             >
-                <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4 text-white">
+                <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between gap-4 text-white">
                     <div className="flex items-center gap-3">
                         {isDown ? (
-                            <AlertCircle className="w-5 h-5 flex-shrink-0 animate-pulse" />
+                            <div className="bg-white/20 p-1.5 rounded-lg animate-pulse">
+                                <AlertCircle className="w-4 h-4" />
+                            </div>
                         ) : (
-                            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                            <div className="bg-white/20 p-1.5 rounded-lg">
+                                <AlertTriangle className="w-4 h-4" />
+                            </div>
                         )}
-                        <p className="text-sm font-black uppercase tracking-tight">
-                            {status.global_alert || (isDown
-                                ? "Critical: Some Government APIs are currently unavailable."
-                                : "Notice: Government APIs are experiencing high latency.")}
+                        <p className="text-[11px] font-black uppercase tracking-[0.1em]">
+                            {status.message || (isDown ? "🔴 Service Unavailable" : "⚠️ Govt API Slow")}
                         </p>
                     </div>
 
                     <button
                         onClick={() => setIsVisible(false)}
-                        className="hover:bg-white/20 p-1 rounded-lg transition-colors"
+                        className="hover:bg-white/20 p-2 rounded-xl transition-all active:scale-90"
                     >
                         <X className="w-4 h-4" />
                     </button>

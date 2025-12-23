@@ -37,6 +37,7 @@ exports.checkAndDeductCredits = exports.topUpWallet = exports.BillingService = v
 const admin = __importStar(require("firebase-admin"));
 const logger = __importStar(require("firebase-functions/logger"));
 const interface_1 = require("./interface");
+const notifications_1 = require("../notifications");
 const WALLETS_COLLECTION = 'wallets';
 class BillingService {
     static async deductCredits(tenantId, referenceId) {
@@ -48,7 +49,7 @@ class BillingService {
                     tenantId,
                     balance: 0,
                     currency: 'INR',
-                    lowBalanceThreshold: 1000,
+                    lowBalanceThreshold: 500,
                 };
                 transaction.set(walletRef, newWallet);
                 throw new Error('INSUFFICIENT_BALANCE: New wallet created with 0 balance.');
@@ -70,6 +71,12 @@ class BillingService {
             transaction.set(txRef, newTransaction);
             if (newBalance <= wallet.lowBalanceThreshold) {
                 logger.warn(`LOW_BALANCE: Tenant ${tenantId} reached threshold. Current: ${newBalance}`);
+                if (wallet.contactEmail) {
+                    (0, notifications_1.sendLowBalanceEmail)(wallet.contactEmail, newBalance).catch(e => logger.error("Failed to send low balance email:", e));
+                }
+                if (wallet.contactPhone) {
+                    (0, notifications_1.sendWhatsAppAlert)(wallet.contactPhone, newBalance).catch(e => logger.error("Failed to send low balance WhatsApp:", e));
+                }
             }
         });
     }

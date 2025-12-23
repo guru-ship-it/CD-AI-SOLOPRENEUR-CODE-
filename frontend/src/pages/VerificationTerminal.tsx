@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WalletWidget } from '../components/billing/WalletWidget';
 import { BulkUploader } from '../components/verification/BulkUploader';
+import VerificationGrid from '../components/verification/VerificationGrid';
 import { cn } from '../utils/cn';
 
 const VERIFICATION_TYPES = [
@@ -93,229 +94,249 @@ export const VerificationTerminal: React.FC = () => {
     };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-6xl mx-auto space-y-8 pb-12">
             <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Unified Gateway Terminal</h1>
-                <p className="text-slate-500 font-medium tracking-tight">One Endpoint. Twenty-Five Jurisdictions. Zero Friction.</p>
+                <p className="text-[10px] font-black text-[#4285F4] uppercase tracking-[0.2em]">Verified Sovereign Gateway</p>
+                <h1 className="text-4xl font-black text-white tracking-tight uppercase leading-none">Unified Identity Terminal</h1>
+                <p className="text-slate-400 font-medium tracking-tight">One Endpoint. Twenty-Five Jurisdictions. Zero Friction.</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Type Selection & Wallet */}
-                <div className="lg:col-span-4 space-y-8">
-                    <WalletWidget />
+            <div className="space-y-8">
+                {/* Mode Selector */}
+                <div className="flex p-1.5 bg-[#1E293B]/60 backdrop-blur-md border border-white/5 rounded-2xl gap-1 w-fit">
+                    <button
+                        onClick={() => { setMode('SINGLE'); setResult(null); }}
+                        className={cn(
+                            "py-2 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                            mode === 'SINGLE' ? "bg-[#4285F4] text-white shadow-lg shadow-blue-500/20" : "text-slate-400 hover:text-white"
+                        )}
+                    >
+                        <Command className="w-3 h-3 inline-block mr-1.5 mb-0.5" /> Single Check
+                    </button>
+                    <button
+                        onClick={() => { setMode('BULK'); setResult(null); }}
+                        className={cn(
+                            "py-2 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                            mode === 'BULK' ? "bg-[#4285F4] text-white shadow-lg shadow-blue-500/20" : "text-slate-400 hover:text-white"
+                        )}
+                    >
+                        <Layers className="w-3 h-3 inline-block mr-1.5 mb-0.5" /> Bulk (CSV)
+                    </button>
+                </div>
 
-                    <div className="flex p-1.5 bg-slate-100 rounded-2xl gap-1">
-                        <button
-                            onClick={() => setMode('SINGLE')}
-                            className={cn(
-                                "flex-1 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                mode === 'SINGLE' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                            )}
-                        >
-                            <Command className="w-3 h-3 inline-block mr-1.5 mb-0.5" /> Single
-                        </button>
-                        <button
-                            onClick={() => setMode('BULK')}
-                            className={cn(
-                                "flex-1 py-2 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                mode === 'BULK' ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                            )}
-                        >
-                            <Layers className="w-3 h-3 inline-block mr-1.5 mb-0.5" /> Bulk (CSV)
-                        </button>
+                {mode === 'BULK' ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        <div className="lg:col-span-4"><WalletWidget /></div>
+                        <div className="lg:col-span-8"><BulkUploader onBatchSubmit={handleBatchSubmit} /></div>
                     </div>
-
-                    <div className="space-y-3">
-                        {VERIFICATION_TYPES.map((type) => (
-                            <button
-                                key={type.id}
-                                onClick={() => {
-                                    setSelectedType(type);
+                ) : (
+                    <div className="space-y-12">
+                        {/* Step 1: Selection Grid */}
+                        {!selectedType && (
+                            <div className="animate-fade-in">
+                                <h3 className="text-sm font-black text-slate-500 uppercase tracking-[0.2em] mb-6">Select Document Category</h3>
+                                <VerificationGrid onSelect={(id) => {
+                                    const type = VERIFICATION_TYPES.find(t => t.id === id);
+                                    if (type) setSelectedType(type);
                                     setInputs({});
                                     setResult(null);
-                                }}
-                                className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all ${selectedType.id === type.id
-                                    ? 'bg-slate-900 text-white border-slate-900 shadow-xl'
-                                    : 'bg-white/60 text-slate-500 border-slate-200 hover:bg-slate-50'
-                                    }`}
-                            >
-                                <div className={selectedType.id === type.id ? 'text-emerald-400' : 'text-slate-400'}>
-                                    {type.icon}
-                                </div>
-                                <span className="font-bold text-sm tracking-tight">{type.name}</span>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Input & Output */}
-                <div className="lg:col-span-8 space-y-6">
-                    {mode === 'BULK' ? (
-                        <BulkUploader onBatchSubmit={handleBatchSubmit} />
-                    ) : (
-                        <GlassCard className="p-8 border-white/60 bg-white/40">
-                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight mb-6 flex items-center gap-2">
-                                {selectedType.icon} {selectedType.name} Inputs
-                            </h3>
-
-                            <div className="space-y-4">
-                                {selectedType.fields.includes('idNumber') && (
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Document Number</label>
-                                        <input
-                                            type="text"
-                                            placeholder={`Enter ${selectedType.name} Number`}
-                                            className="w-full bg-white/80 border border-slate-200 rounded-xl p-4 text-sm font-bold tracking-tight outline-none focus:ring-4 focus:ring-slate-900/5 transition-all"
-                                            value={inputs.idNumber || ''}
-                                            onChange={(e) => setInputs({ ...inputs, idNumber: e.target.value })}
-                                        />
-                                    </div>
-                                )}
-
-                                {selectedType.fields.includes('dob') && (
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Date of Birth (DD-MM-YYYY)</label>
-                                        <input
-                                            type="text"
-                                            placeholder="15-08-1947"
-                                            className="w-full bg-white/80 border border-slate-200 rounded-xl p-4 text-sm font-bold tracking-tight outline-none focus:ring-4 focus:ring-slate-900/5 transition-all"
-                                            value={inputs.dob || ''}
-                                            onChange={(e) => setInputs({ ...inputs, dob: e.target.value })}
-                                        />
-                                    </div>
-                                )}
-
-                                {selectedType.fields.includes('name') && (
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Legal Name</label>
-                                        <input
-                                            type="text"
-                                            className="w-full bg-white/80 border border-slate-200 rounded-xl p-4 text-sm font-bold tracking-tight outline-none focus:ring-4 focus:ring-slate-900/5 transition-all"
-                                            value={inputs.name || ''}
-                                            onChange={(e) => setInputs({ ...inputs, name: e.target.value })}
-                                        />
-                                    </div>
-                                )}
-
-                                {selectedType.fields.includes('fatherName') && (
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Father's Name</label>
-                                        <input
-                                            type="text"
-                                            className="w-full bg-white/80 border border-slate-200 rounded-xl p-4 text-sm font-bold tracking-tight outline-none focus:ring-4 focus:ring-slate-900/5 transition-all"
-                                            value={inputs.fatherName || ''}
-                                            onChange={(e) => setInputs({ ...inputs, fatherName: e.target.value })}
-                                        />
-                                    </div>
-                                )}
-
-                                {selectedType.fields.includes('address') && (
-                                    <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Address</label>
-                                        <textarea
-                                            rows={2}
-                                            className="w-full bg-white/80 border border-slate-200 rounded-xl p-4 text-sm font-bold tracking-tight outline-none focus:ring-4 focus:ring-slate-900/5 transition-all"
-                                            value={inputs.address || ''}
-                                            onChange={(e) => setInputs({ ...inputs, address: e.target.value })}
-                                        />
-                                    </div>
-                                )}
-
-                                {selectedType.fields.includes('accessToken') && (
-                                    <div className="space-y-1.5 text-center p-8 border-2 border-dashed border-slate-200 rounded-3xl">
-                                        <TactileButton variant="primary" className="mx-auto" onClick={() => toast.success("OAuth Connector Active")}>
-                                            Open DigiLocker OAuth
-                                        </TactileButton>
-                                    </div>
-                                )}
-
-                                {selectedType.fields.includes('imageBase64') && (
-                                    <div className="space-y-1.5 text-center p-8 border-2 border-dashed border-slate-200 rounded-3xl">
-                                        <Scan className="w-12 h-12 text-slate-100 mx-auto mb-4" />
-                                        <TactileButton variant="secondary" className="mx-auto">
-                                            Upload ID Screenshot
-                                        </TactileButton>
-                                    </div>
-                                )}
-
-                                {!selectedType.fields.includes('accessToken') && !selectedType.fields.includes('imageBase64') && (
-                                    <TactileButton
-                                        variant="primary"
-                                        className="w-full h-14 mt-6"
-                                        onClick={handleVerify}
-                                        disabled={loading}
-                                    >
-                                        {loading ? 'Performing Sovereign Check...' : `Verify ${selectedType.id}`}
-                                    </TactileButton>
-                                )}
+                                }} />
                             </div>
-                        </GlassCard>
-                    )}
+                        )}
 
-                    <AnimatePresence>
-                        {result && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 20 }}
-                            >
-                                <GlassCard className={cn(
-                                    "p-6 border-l-8 transition-all",
-                                    result.isValid ? "border-emerald-500 bg-emerald-50/20" : "border-red-500 bg-red-50/20"
-                                )}>
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Normalized Result</p>
-                                            <h4 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase">
-                                                {result.legalName || 'Unknown Identity'}
-                                            </h4>
-                                            {result.rawResponse?.jobId && (
-                                                <p className="text-[10px] font-black text-blue-600 mt-2 uppercase tracking-widest font-mono">
-                                                    ASYNC JOB STARTED: {result.rawResponse.jobId}
-                                                </p>
+                        {/* Step 2: Input Form */}
+                        {selectedType && (mode === 'SINGLE') && (
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-fade-in">
+                                <div className="lg:col-span-4 space-y-8">
+                                    <WalletWidget />
+
+                                    {/* Quick Switcher (Side) */}
+                                    <GlassCard className="p-4 border-white/5 bg-[#1E293B]/40">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Selected Type</span>
+                                            <button
+                                                onClick={() => { (setSelectedType as any)(null); setResult(null); }}
+                                                className="text-[10px] font-black text-[#4285F4] uppercase hover:underline"
+                                            >
+                                                Change
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/5 text-white">
+                                            <div className="text-[#4285F4]">{selectedType.icon}</div>
+                                            <span className="font-black text-sm">{selectedType.name}</span>
+                                        </div>
+                                    </GlassCard>
+                                </div>
+
+                                <div className="lg:col-span-8 space-y-6">
+                                    <GlassCard className="p-8 border-white/5 bg-[#1E293B]/60 shadow-2xl">
+                                        <h3 className="text-lg font-black text-white uppercase tracking-tight mb-6 flex items-center gap-2">
+                                            {selectedType.icon} {selectedType.name} Inputs
+                                        </h3>
+
+                                        <div className="space-y-4">
+                                            {selectedType.fields.includes('idNumber') && (
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Document Number</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder={`Enter ${selectedType.name} Number`}
+                                                        className="w-full bg-[#0F172A]/80 border border-white/5 rounded-xl p-4 text-sm font-bold tracking-tight text-white outline-none focus:ring-4 focus:ring-[#4285F4]/10 transition-all placeholder:text-slate-600"
+                                                        value={inputs.idNumber || ''}
+                                                        onChange={(e) => setInputs({ ...inputs, idNumber: e.target.value })}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {selectedType.fields.includes('dob') && (
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Date of Birth (DD-MM-YYYY)</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="15-08-1947"
+                                                        className="w-full bg-[#0F172A]/80 border border-white/5 rounded-xl p-4 text-sm font-bold tracking-tight text-white outline-none focus:ring-4 focus:ring-[#4285F4]/10 transition-all placeholder:text-slate-600"
+                                                        value={inputs.dob || ''}
+                                                        onChange={(e) => setInputs({ ...inputs, dob: e.target.value })}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {/* ... (reusing the rest of the inputs with the same white text / dark bg patterns) */}
+                                            {selectedType.fields.includes('name') && (
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Legal Name</label>
+                                                    <input
+                                                        type="text"
+                                                        className="w-full bg-[#0F172A]/80 border border-white/5 rounded-xl p-4 text-sm font-bold tracking-tight text-white outline-none focus:ring-4 focus:ring-[#4285F4]/10 transition-all"
+                                                        value={inputs.name || ''}
+                                                        onChange={(e) => setInputs({ ...inputs, name: e.target.value })}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {selectedType.fields.includes('fatherName') && (
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Father's Name</label>
+                                                    <input
+                                                        type="text"
+                                                        className="w-full bg-[#0F172A]/80 border border-white/5 rounded-xl p-4 text-sm font-bold tracking-tight text-white outline-none focus:ring-4 focus:ring-[#4285F4]/10 transition-all"
+                                                        value={inputs.fatherName || ''}
+                                                        onChange={(e) => setInputs({ ...inputs, fatherName: e.target.value })}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {selectedType.fields.includes('address') && (
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Address</label>
+                                                    <textarea
+                                                        rows={2}
+                                                        className="w-full bg-[#0F172A]/80 border border-white/5 rounded-xl p-4 text-sm font-bold tracking-tight text-white outline-none focus:ring-4 focus:ring-[#4285F4]/10 transition-all"
+                                                        value={inputs.address || ''}
+                                                        onChange={(e) => setInputs({ ...inputs, address: e.target.value })}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {selectedType.fields.includes('accessToken') && (
+                                                <div className="space-y-1.5 text-center p-8 border-2 border-dashed border-white/5 rounded-3xl">
+                                                    <TactileButton variant="primary" className="mx-auto bg-[#4285F4] hover:bg-blue-600" onClick={() => toast.success("OAuth Connector Active")}>
+                                                        Open DigiLocker OAuth
+                                                    </TactileButton>
+                                                </div>
+                                            )}
+
+                                            {selectedType.fields.includes('imageBase64') && (
+                                                <div className="space-y-1.5 text-center p-8 border-2 border-dashed border-white/5 rounded-3xl">
+                                                    <Scan className="w-12 h-12 text-slate-700 mx-auto mb-4" />
+                                                    <TactileButton variant="secondary" className="mx-auto border-white/10 text-white">
+                                                        Upload ID Screenshot
+                                                    </TactileButton>
+                                                </div>
+                                            )}
+
+                                            {!selectedType.fields.includes('accessToken') && !selectedType.fields.includes('imageBase64') && (
+                                                <TactileButton
+                                                    variant="primary"
+                                                    className="w-full h-14 mt-6 bg-[#4285F4] hover:bg-blue-600 shadow-xl shadow-blue-500/20"
+                                                    onClick={handleVerify}
+                                                    disabled={loading}
+                                                >
+                                                    {loading ? 'Performing Sovereign Check...' : `Verify ${selectedType.id}`}
+                                                </TactileButton>
                                             )}
                                         </div>
-                                        <div className={cn(
-                                            "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
-                                            result.isValid ? "bg-emerald-500 text-white" : "bg-red-500 text-white"
-                                        )}>
-                                            {result.isValid ? 'VERIFIED' : 'FAILED'}
-                                        </div>
-                                    </div>
+                                    </GlassCard>
 
-                                    {result.error && (
-                                        <div className="mt-4 p-3 bg-red-100/50 rounded-xl border border-red-200 flex items-center gap-3">
-                                            <AlertCircle className="w-4 h-4 text-red-600" />
-                                            <p className="text-xs font-bold text-red-700">{result.error}</p>
-                                        </div>
-                                    )}
-
-                                    <div className="mt-6 pt-4 border-t border-slate-900/10 flex justify-between items-center">
-                                        <details className="cursor-pointer group outline-none flex-1">
-                                            <summary className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-slate-900 transition-colors list-none">
-                                                View Forensic Audit Trail (Raw Response)
-                                            </summary>
-                                            <pre className="mt-4 p-4 bg-slate-900 text-emerald-400 text-[10px] font-mono rounded-xl overflow-x-auto shadow-inner">
-                                                {JSON.stringify(result.rawResponse || result, null, 2)}
-                                            </pre>
-                                        </details>
-
-                                        {result.verificationId && (
-                                            <TactileButton
-                                                variant="primary"
-                                                size="sm"
-                                                onClick={() => handleDownloadCertificate(result.verificationId)}
-                                                disabled={loading}
+                                    <AnimatePresence>
+                                        {result && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: 20 }}
                                             >
-                                                {loading ? 'Generating...' : 'Download Audit Proof'}
-                                            </TactileButton>
+                                                <GlassCard className={cn(
+                                                    "p-6 border-l-8 transition-all bg-[#1E293B]/80",
+                                                    result.isValid ? "border-[#34A853]" : "border-[#EA4335]"
+                                                )}>
+                                                    <div className="flex justify-between items-start">
+                                                        <div>
+                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Normalized Result</p>
+                                                            <h4 className="text-xl font-black text-white tracking-tight leading-none uppercase">
+                                                                {result.legalName || 'Unknown Identity'}
+                                                            </h4>
+                                                            {result.rawResponse?.jobId && (
+                                                                <p className="text-[10px] font-black text-[#4285F4] mt-2 uppercase tracking-widest font-mono">
+                                                                    ASYNC JOB STARTED: {result.rawResponse.jobId}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                        <div className={cn(
+                                                            "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider",
+                                                            result.isValid ? "bg-[#34A853] text-white" : "bg-[#EA4335] text-white"
+                                                        )}>
+                                                            {result.isValid ? 'VERIFIED' : 'FAILED'}
+                                                        </div>
+                                                    </div>
+
+                                                    {result.error && (
+                                                        <div className="mt-4 p-3 bg-[#EA4335]/10 rounded-xl border border-[#EA4335]/20 flex items-center gap-3">
+                                                            <AlertCircle className="w-4 h-4 text-[#EA4335]" />
+                                                            <p className="text-xs font-bold text-[#EA4335]/80">{result.error}</p>
+                                                        </div>
+                                                    )}
+
+                                                    <div className="mt-6 pt-4 border-t border-white/5 flex justify-between items-center">
+                                                        <details className="cursor-pointer group outline-none flex-1">
+                                                            <summary className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-[#4285F4] transition-colors list-none">
+                                                                View Forensic Audit Trail (Raw Response)
+                                                            </summary>
+                                                            <pre className="mt-4 p-4 bg-[#0F172A] text-[#34A853] text-[10px] font-mono rounded-xl overflow-x-auto shadow-inner border border-white/5">
+                                                                {JSON.stringify(result.rawResponse || result, null, 2)}
+                                                            </pre>
+                                                        </details>
+
+                                                        {result.verificationId && (
+                                                            <TactileButton
+                                                                variant="primary"
+                                                                size="sm"
+                                                                className="bg-[#4285F4] hover:bg-blue-600 shadow-lg shadow-blue-500/20"
+                                                                onClick={() => handleDownloadCertificate(result.verificationId)}
+                                                                disabled={loading}
+                                                            >
+                                                                {loading ? 'Generating...' : 'Download Audit Proof'}
+                                                            </TactileButton>
+                                                        )}
+                                                    </div>
+                                                </GlassCard>
+                                            </motion.div>
                                         )}
-                                    </div>
-                                </GlassCard>
-                            </motion.div>
+                                    </AnimatePresence>
+                                </div>
+                            </div>
                         )}
-                    </AnimatePresence>
-                </div>
+                    </div>
+                )}
             </div>
         </div>
     );

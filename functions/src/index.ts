@@ -49,6 +49,7 @@ export { processCrimeCheck } from "./verification/worker";
 export { generateCertificate } from "./verification/certificate";
 export { processBatch } from "./verification/batch";
 export { checkApiHealth } from "./health";
+export { sendDailyReport } from "./notifications_v2";
 
 /**
  * Legacy Support Proxy

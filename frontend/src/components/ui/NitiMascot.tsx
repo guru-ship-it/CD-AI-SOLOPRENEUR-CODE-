@@ -30,13 +30,13 @@ export const NitiMascot: React.FC<NitiMascotProps> = ({ className, size = 'md' }
                 className="relative z-10"
             >
                 {/* The Head / Body */}
-                <div className="w-full h-full bg-slate-900 rounded-[2rem] border-2 border-slate-800 shadow-2xl relative overflow-hidden flex items-center justify-center">
+                <div className="w-full h-full bg-[#0F172A] rounded-[2rem] border-2 border-white/5 shadow-2xl relative overflow-hidden flex items-center justify-center">
 
                     {/* Internal Glow */}
-                    <div className="absolute inset-0 bg-emerald-500/5 pulse-subtle" />
+                    <div className="absolute inset-0 bg-[#4285F4]/5 pulse-subtle" />
 
                     {/* Glass Visor */}
-                    <div className="absolute top-1/4 left-1/4 right-1/4 h-1/3 bg-slate-100/10 backdrop-blur-md rounded-lg border border-white/20 overflow-hidden">
+                    <div className="absolute top-1/4 left-1/4 right-1/4 h-1/3 bg-white/5 backdrop-blur-md rounded-lg border border-white/10 overflow-hidden">
                         <motion.div
                             animate={{
                                 x: ['-100%', '200%']
@@ -46,13 +46,13 @@ export const NitiMascot: React.FC<NitiMascotProps> = ({ className, size = 'md' }
                                 repeat: Infinity,
                                 ease: "linear"
                             }}
-                            className="w-1/2 h-full bg-emerald-400/20 blur-sm"
+                            className="w-1/2 h-full bg-[#4285F4]/20 blur-sm"
                         />
 
                         {/* Visor Eyes/Scan Line */}
                         <div className="absolute inset-0 flex items-center justify-around px-2">
-                            <div className="w-1 h-1 bg-emerald-400 rounded-full shadow-[0_0_8px_#34d399]" />
-                            <div className="w-1 h-1 bg-emerald-400 rounded-full shadow-[0_0_8px_#34d399]" />
+                            <div className="w-1 h-1 bg-[#4285F4] rounded-full shadow-[0_0_8px_#4285F4]" />
+                            <div className="w-1 h-1 bg-[#4285F4] rounded-full shadow-[0_0_8px_#4285F4]" />
                         </div>
                     </div>
 
@@ -75,9 +75,9 @@ export const NitiMascot: React.FC<NitiMascotProps> = ({ className, size = 'md' }
             </motion.div>
 
             {/* Hover Tooltip */}
-            <div className="absolute -top-12 left-1/2 -translateX-1/2 bg-white px-3 py-1.5 rounded-xl border border-slate-100 shadow-xl opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all pointer-events-none whitespace-nowrap">
-                <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest leading-none">Hi, I'm Niti</p>
-                <div className="absolute -bottom-1 left-1/2 -translateX-1/2 w-2 h-2 bg-white border-b border-r border-slate-100 rotate-45" />
+            <div className="absolute -top-12 left-1/2 -translateX-1/2 bg-[#0F172A] border border-white/10 px-3 py-1.5 rounded-xl shadow-xl opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all pointer-events-none whitespace-nowrap">
+                <p className="text-[10px] font-black text-white uppercase tracking-widest leading-none">Hi, I'm Niti</p>
+                <div className="absolute -bottom-1 left-1/2 -translateX-1/2 w-2 h-2 bg-[#0F172A] border-b border-r border-white/10 rotate-45" />
             </div>
         </div>
     );

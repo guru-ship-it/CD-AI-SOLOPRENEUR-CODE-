@@ -72,27 +72,27 @@ export const Dashboard = () => {
         <div className="p-0 space-y-8">
 
             {/* Top Bar - Clean White + Glass */}
-            <div className="flex items-center justify-between glass-panel px-6 py-4 border-white/60 bg-white/40 shadow-xl shadow-slate-900/5">
+            <div className="flex items-center justify-between glass-panel px-6 py-4 border-white/5 bg-[#1E293B]/40 shadow-xl shadow-slate-900/5 transition-all">
                 <div className="flex items-center gap-6">
                     <NitiMascot size="sm" className="hidden sm:block" />
                     <div className="hidden md:block">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Master Terminal</p>
-                        <h2 className="text-xl font-black text-slate-900 tracking-tight leading-none uppercase">
-                            Welcome, <span className="text-emerald-500">Guru</span>
+                        <h2 className="text-xl font-black text-white tracking-tight leading-none uppercase">
+                            Welcome, <span className="text-[#4285F4]">Guru</span>
                         </h2>
                     </div>
                 </div>
                 <div className="flex items-center gap-6">
-                    <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-emerald-50 rounded-full border border-emerald-100">
-                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                        <span className="text-[10px] font-black text-emerald-700 uppercase tracking-tighter">System Status: Secure</span>
+                    <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-[#4285F4]/10 rounded-full border border-[#4285F4]/20">
+                        <div className="w-1.5 h-1.5 bg-[#4285F4] rounded-full animate-pulse" />
+                        <span className="text-[10px] font-black text-[#4285F4] uppercase tracking-tighter">System Status: Secure</span>
                     </div>
-                    <div className="flex items-center gap-3 pl-6 border-l border-slate-200">
+                    <div className="flex items-center gap-3 pl-6 border-l border-white/5">
                         <div className="text-right hidden sm:block">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}</p>
-                            <p className="text-[10px] font-bold text-slate-900 uppercase">asia-south1 (Mumbai)</p>
+                            <p className="text-[10px] font-bold text-slate-300 uppercase">asia-south1 (Mumbai)</p>
                         </div>
-                        <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-slate-900/20">
+                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#0F172A] shadow-lg shadow-blue-500/20">
                             <UserCircle className="w-6 h-6" />
                         </div>
                     </div>
@@ -101,34 +101,34 @@ export const Dashboard = () => {
 
             {/* Widgets Row 1 (Critical) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <GlassCard className="border-l-4 border-amber-500 bg-amber-50/10">
+                <GlassCard className="border-l-4 border-[#FBBC05] bg-[#FBBC05]/5">
                     <div className="flex justify-between items-start">
                         <div>
-                            <p className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em]">Pending Approvals</p>
-                            <h3 className="text-4xl font-black text-slate-900 mt-2 tabular-nums">{approvals.length}</h3>
+                            <p className="text-[10px] font-black text-[#FBBC05] uppercase tracking-[0.2em]">Pending Approvals</p>
+                            <h3 className="text-4xl font-black text-white mt-2 tabular-nums">{approvals.length}</h3>
                         </div>
-                        <div className="p-2 bg-amber-100 rounded-lg text-amber-600">
+                        <div className="p-2 bg-[#FBBC05]/10 rounded-lg text-[#FBBC05]">
                             <Lock className="w-5 h-5" />
                         </div>
                     </div>
-                    <p className="text-xs text-amber-600/60 font-medium mt-4 italic uppercase">Critical Action Authorization Required</p>
+                    <p className="text-xs text-[#FBBC05]/60 font-medium mt-4 italic uppercase">Critical Action Authorization Required</p>
                 </GlassCard>
 
                 <div className="md:col-span-1">
                     <BreachTimer active={incidentActive} />
                 </div>
 
-                <GlassCard className="border-l-4 border-blue-500 bg-blue-50/10">
+                <GlassCard className="border-l-4 border-[#4285F4] bg-[#4285F4]/5">
                     <div className="flex justify-between items-start">
                         <div>
-                            <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Active Tenants</p>
-                            <h3 className="text-4xl font-black text-slate-900 mt-2 tabular-nums">24</h3>
+                            <p className="text-[10px] font-black text-[#4285F4] uppercase tracking-[0.2em]">Active Tenants</p>
+                            <h3 className="text-4xl font-black text-white mt-2 tabular-nums">24</h3>
                         </div>
-                        <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
+                        <div className="p-2 bg-[#4285F4]/10 rounded-lg text-[#4285F4]">
                             <Building2 className="w-5 h-5" />
                         </div>
                     </div>
-                    <p className="text-xs text-blue-600/60 font-medium mt-4 uppercase">Across 4 Regulatory Jurisdictions</p>
+                    <p className="text-xs text-[#4285F4]/60 font-medium mt-4 uppercase">Across 4 Regulatory Jurisdictions</p>
                 </GlassCard>
             </div>
 
@@ -138,10 +138,10 @@ export const Dashboard = () => {
             )}
 
             {/* Main Streams Table */}
-            <GlassCard className="p-0 overflow-hidden border-t-8 border-slate-900">
-                <div className="px-8 py-6 border-b border-white/60 bg-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <GlassCard className="p-0 overflow-hidden border-t-8 border-[#0F172A] bg-[#1E293B]/60 shadow-2xl">
+                <div className="px-8 py-6 border-b border-white/5 bg-[#1E293B]/40 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
-                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Recent Verification Stream</h3>
+                        <h3 className="text-xl font-black text-white uppercase tracking-tight">Recent Verification Stream</h3>
                         <p className="text-xs text-slate-400 font-medium uppercase mt-1">Real-time Telemetry & NRIC Masking</p>
                     </div>
                     <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -150,7 +150,7 @@ export const Dashboard = () => {
                             <input
                                 type="text"
                                 placeholder="Filter forensic logs..."
-                                className="w-full pl-10 pr-4 py-2 bg-slate-100/50 border border-slate-200 rounded-xl text-xs font-bold font-mono outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                className="w-full pl-10 pr-4 py-2 bg-[#0F172A]/50 border border-white/5 rounded-xl text-xs font-bold font-mono text-white outline-none focus:ring-2 focus:ring-[#4285F4]/20 transition-all"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
@@ -189,12 +189,12 @@ export const Dashboard = () => {
                                         <td className="px-8 py-5 font-mono text-[11px] text-slate-400 tabular-nums">{v.created_at}</td>
                                         <td className="px-8 py-5">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-emerald-100 group-hover:text-emerald-600 transition-colors">
+                                                <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-[#4285F4]/10 group-hover:text-[#4285F4] transition-colors">
                                                     <UserCircle className="w-4 h-4" />
                                                 </div>
                                                 <div>
-                                                    <p className="font-bold text-slate-900 text-sm">{maskedID}</p>
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{v.applicant_name}</p>
+                                                    <p className="font-bold text-white text-sm">{maskedID}</p>
+                                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{v.applicant_name}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -204,10 +204,10 @@ export const Dashboard = () => {
                                             </Badge>
                                         </td>
                                         <td className="px-8 py-5 text-center">
-                                            <span className="text-[10px] font-black text-emerald-600 tabular-nums">99.9%</span>
+                                            <span className="text-[10px] font-black text-[#4285F4] tabular-nums">99.9%</span>
                                         </td>
                                         <td className="px-8 py-5 text-right">
-                                            <TactileButton variant="ghost" size="sm" className="text-[10px] uppercase font-black tracking-widest text-emerald-600">
+                                            <TactileButton variant="ghost" size="sm" className="text-[10px] uppercase font-black tracking-widest text-[#4285F4]">
                                                 Log
                                             </TactileButton>
                                         </td>
