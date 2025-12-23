@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyIdentity = exports.checkApiHealth = exports.generateCertificate = exports.processBatch = exports.processCrimeCheck = exports.aggregateHourlyStats = exports.checkAndDeductCredits = exports.topUpWallet = exports.verifyDocument = exports.whatsappWebhook = exports.adminSuperLogin = exports.bleachOldDocs = void 0;
+exports.verifyIdentity = exports.checkApiHealth = exports.processBatch = exports.generateCertificate = exports.processCrimeCheck = exports.aggregateHourlyStats = exports.checkAndDeductCredits = exports.topUpWallet = exports.verifyDocument = exports.whatsappWebhook = exports.adminSuperLogin = exports.bleachOldDocs = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const scheduler_1 = require("firebase-functions/v2/scheduler");
 const logger = __importStar(require("firebase-functions/logger"));
@@ -75,10 +75,10 @@ var analytics_1 = require("./analytics");
 Object.defineProperty(exports, "aggregateHourlyStats", { enumerable: true, get: function () { return analytics_1.aggregateHourlyStats; } });
 var worker_1 = require("./verification/worker");
 Object.defineProperty(exports, "processCrimeCheck", { enumerable: true, get: function () { return worker_1.processCrimeCheck; } });
-var batch_1 = require("./verification/batch");
-Object.defineProperty(exports, "processBatch", { enumerable: true, get: function () { return batch_1.processBatch; } });
 var certificate_1 = require("./verification/certificate");
 Object.defineProperty(exports, "generateCertificate", { enumerable: true, get: function () { return certificate_1.generateCertificate; } });
+var batch_1 = require("./verification/batch");
+Object.defineProperty(exports, "processBatch", { enumerable: true, get: function () { return batch_1.processBatch; } });
 var health_1 = require("./health");
 Object.defineProperty(exports, "checkApiHealth", { enumerable: true, get: function () { return health_1.checkApiHealth; } });
 exports.verifyIdentity = (0, https_1.onCall)({ region: "asia-south1" }, async (request) => {

@@ -19,13 +19,12 @@ export class BillingService {
             const walletDoc = await transaction.get(walletRef);
 
             if (!walletDoc.exists) {
-                // Create default wallet if it doesn't exist (e.g. for trial or auto-onboarded tenants)
+                // Create default wallet if it doesn't exist
                 const newWallet: Wallet = {
                     tenantId,
                     balance: 0,
                     currency: 'INR',
                     lowBalanceThreshold: 1000,
-                    transactions: []
                 };
                 transaction.set(walletRef, newWallet);
                 throw new Error('INSUFFICIENT_BALANCE: New wallet created with 0 balance.');
@@ -38,6 +37,8 @@ export class BillingService {
             }
 
             const newBalance = wallet.balance - VERIFICATION_COST;
+            const txRef = walletRef.collection('transactions').doc();
+
             const newTransaction: Transaction = {
                 amount: VERIFICATION_COST,
                 type: 'DEBIT',
@@ -46,17 +47,12 @@ export class BillingService {
                 description: `Identity Verification - ${referenceId}`
             };
 
-            transaction.update(walletRef, {
-                balance: newBalance,
-                transactions: admin.firestore.FieldValue.arrayUnion(newTransaction)
-            });
+            transaction.update(walletRef, { balance: newBalance });
+            transaction.set(txRef, newTransaction);
 
             // Low Balance Alert Check
             if (newBalance <= wallet.lowBalanceThreshold) {
                 logger.warn(`LOW_BALANCE: Tenant ${tenantId} reached threshold. Current: ${newBalance}`);
-                // In a real scenario, we'd lookup the DPO/Admin phone number linked to this tenant
-                // For FAT, we use a placeholder or log strictly.
-                // await sendWhatsAppMessage('ADMIN_PHONE', `ALERT: Your CDC AI wallet balance is low (${newBalance} INR). Please top up to avoid service interruption.`);
             }
         });
     }
@@ -66,6 +62,7 @@ export class BillingService {
      */
     static async addCredits(tenantId: string, amount: number, paymentId: string): Promise<void> {
         const walletRef = this.db.collection(WALLETS_COLLECTION).doc(tenantId);
+        const txRef = walletRef.collection('transactions').doc();
 
         const newTransaction: Transaction = {
             amount,
@@ -75,10 +72,12 @@ export class BillingService {
             description: 'Wallet Top-up'
         };
 
-        await walletRef.set({
-            balance: admin.firestore.FieldValue.increment(amount),
-            transactions: admin.firestore.FieldValue.arrayUnion(newTransaction)
-        }, { merge: true });
+        await this.db.runTransaction(async (t) => {
+            t.set(walletRef, {
+                balance: admin.firestore.FieldValue.increment(amount)
+            }, { merge: true });
+            t.set(txRef, newTransaction);
+        });
 
         logger.info(`CREDIT_ADDED: Added ${amount} to tenant ${tenantId}`);
     }
@@ -122,19 +121,31 @@ export const checkAndDeductCredits = async (tenantId: string, cost: number) => {
     const firestore = admin.firestore();
     return firestore.runTransaction(async (t) => {
         const docRef = firestore.collection('wallets').doc(tenantId);
+        const txRef = docRef.collection('transactions').doc();
         const doc = await t.get(docRef);
 
         if (!doc.exists) {
             throw new HttpsError('not-found', 'Wallet not found for this tenant.');
         }
 
-        const newBalance = doc.data()!.balance - cost;
+        const currentBalance = doc.data()!.balance;
+        const newBalance = currentBalance - cost;
 
         if (newBalance < 0) {
             throw new HttpsError('resource-exhausted', 'Insufficient Credits. Please Top Up.');
         }
 
+        const transaction: Transaction = {
+            amount: cost,
+            type: 'DEBIT',
+            referenceId: `AUTO_${Date.now()}`,
+            timestamp: new Date(),
+            description: 'Automated Identity Verification'
+        };
+
         t.update(docRef, { balance: newBalance });
+        t.set(txRef, transaction);
+
         return { newBalance };
     });
 };

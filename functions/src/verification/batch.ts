@@ -1,85 +1,121 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
-import * as logger from "firebase-functions/logger";
+import { ADAPTER_REGISTRY } from "./registry";
 import { checkAndDeductCredits } from "../billing/service";
 import { VERIFICATION_COST } from "../billing/interface";
+import { resilientCall } from "./api-client";
+import { defineSecret } from "firebase-functions/params";
+
+const proteanApiKey = defineSecret("PROTEAN_API_KEY");
+const proteanBearerToken = defineSecret("PROTEAN_BEARER_TOKEN");
 
 /**
- * Batch Process Engine
- * Handles bulk verification requests with throttling to avoid rate limits.
+ * Handles bulk verification requests from a CSV upload.
+ * Throttles processing to prevent rate limiting.
  */
-export const processBatch = onCall({ region: "asia-south1" }, async (request) => {
-    const { items, type } = request.data;
+export const processBatch = onCall({
+    secrets: [proteanApiKey, proteanBearerToken],
+    region: "asia-south1",
+    timeoutSeconds: 300 // 5 minutes for large batches
+}, async (request) => {
+    const { requests } = request.data; // Array of { type, inputs }
     const auth = request.auth;
 
-    if (!auth) throw new HttpsError("unauthenticated", "Auth required.");
-    if (!Array.isArray(items)) throw new HttpsError("invalid-argument", "Items must be an array.");
+    if (!auth) {
+        throw new HttpsError("unauthenticated", "User must be authenticated.");
+    }
+
+    if (!Array.isArray(requests) || requests.length === 0) {
+        throw new HttpsError("invalid-argument", "Requests must be a non-empty array.");
+    }
 
     const tenantId = auth.token.tenantId || "MASTER_TENANT";
     const batchId = `BATCH_${Date.now()}`;
-    const db = admin.firestore();
+    const batchRef = admin.firestore().collection('batch_jobs').doc(batchId);
 
-    logger.info(`Batch Job Started: ${batchId} for ${tenantId}. Items: ${items.length}`);
-
-    // 1. Create Batch Header
-    await db.collection('batch_jobs').doc(batchId).set({
+    // 1. Initial State
+    await batchRef.set({
         tenantId,
-        type,
-        totalItems: items.length,
-        processedItems: 0,
+        userId: auth.uid,
         status: 'PROCESSING',
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        totalItems: requests.length,
+        processedItems: 0,
+        successCount: 0,
+        failedCount: 0,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    // 2. background process (simplified for demo/cloud function timeout)
-    // Note: In real production, this should trigger a Task Queue or PubSub
-    // to avoid Cloud Function 540s timeout for large batches.
+    // 2. Process in background (though onCall waits, we'll return the ID early if needed, 
+    // but here we follow the user's flow of looping synchronously with delays)
+    const results = [];
 
-    // Process items in background (don't await loop completion)
-    (async () => {
-        for (let i = 0; i < items.length; i++) {
-            try {
-                // Throttling
-                await new Promise(resolve => setTimeout(resolve, 500));
+    for (const [index, item] of requests.entries()) {
+        const { type, inputs } = item;
+        let result;
 
-                // Deduct credits
-                await checkAndDeductCredits(tenantId, VERIFICATION_COST);
+        try {
+            // Re-using logic from verifyDocument
+            const adapter = ADAPTER_REGISTRY[type];
+            if (!adapter) throw new Error(`Unsupported type: ${type}`);
 
-                // Mock Verification (or call verifyDocument logic)
-                // In a real system, we'd reuse the adapter lookup here
-                const item = items[i];
-                const result = {
-                    isValid: true,
-                    legalName: item.Name || item.name,
-                    timestamp: admin.firestore.FieldValue.serverTimestamp()
-                };
+            // Credit Check & Deduction
+            await checkAndDeductCredits(tenantId, VERIFICATION_COST);
 
-                // Store Result
-                await db.collection('verifications').add({
-                    ...result,
-                    tenantId,
-                    type,
-                    batchId,
-                    inputs: item
-                });
+            // API Call
+            const payload = adapter.buildRequest(inputs);
+            const response = await resilientCall({
+                method: adapter.method,
+                url: adapter.endpoint,
+                data: payload,
+                headers: {
+                    'content-type': 'application/json',
+                    'apikey': proteanApiKey.value(),
+                    'Authorization': `Bearer ${proteanBearerToken.value()}`
+                }
+            });
 
-                // Update Batch Progress
-                await db.collection('batch_jobs').doc(batchId).update({
-                    processedItems: admin.firestore.FieldValue.increment(1)
-                });
+            result = adapter.normalizeResponse(response.data);
 
-            } catch (error) {
-                logger.error(`Batch Item ${i} Failed:`, error);
-            }
+            // Persist Record
+            const verificationId = `CERT_${admin.firestore().collection('verifications').doc().id}`;
+            await admin.firestore().collection('verifications').doc(verificationId).set({
+                tenantId,
+                userId: auth.uid,
+                batchId,
+                type,
+                inputs,
+                result,
+                timestamp: admin.firestore.FieldValue.serverTimestamp(),
+                status: result.isValid ? 'VALID' : 'FAILED',
+                sourceAuthority: adapter.sourceAuthority || 'National Database'
+            });
+
+            results.push({ index, success: true, verificationId, isValid: result.isValid });
+
+        } catch (error: any) {
+            console.error(`Batch item ${index} failed:`, error.message);
+            results.push({ index, success: false, error: error.message });
         }
 
-        // Finalize Batch
-        await db.collection('batch_jobs').doc(batchId).update({
-            status: 'COMPLETED',
-            completedAt: admin.firestore.FieldValue.serverTimestamp()
-        });
+        // Throttling: 500ms delay per user request
+        if (index < requests.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
 
-    })().catch(err => logger.error("Batch Loop Fatal Error:", err));
+        // Update Progress every 5 items or at the end
+        if ((index + 1) % 5 === 0 || index === requests.length - 1) {
+            const successCount = results.filter(r => r.success && r.isValid).length;
+            const failedCount = results.length - successCount;
 
-    return { batchId, status: 'PROCESSING', message: 'Batch verification engine engaged.' };
+            await batchRef.update({
+                processedItems: index + 1,
+                successCount,
+                failedCount,
+                status: (index === requests.length - 1) ? 'COMPLETED' : 'PROCESSING',
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+        }
+    }
+
+    return { batchId, summary: { total: requests.length, processed: results.length } };
 });

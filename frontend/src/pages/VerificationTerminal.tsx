@@ -57,15 +57,14 @@ export const VerificationTerminal: React.FC = () => {
         }
     };
 
-    const handleBatchSubmit = async (items: any[]) => {
+    const handleBatchSubmit = async (requests: any[]) => {
         setLoading(true);
         try {
             const batchFn = httpsCallable(functions, 'processBatch');
             const response: any = await batchFn({
-                items,
-                type: selectedType.id
+                requests: requests
             });
-            toast.success(`Batch ${response.data.batchId} initiated. Processing ${items.length} items.`);
+            toast.success(`Batch execution ${response.data.batchId} initiated. Scanning ${requests.length} entities.`);
         } catch (error: any) {
             toast.error(error.message || 'Batch Submission Failed');
         } finally {

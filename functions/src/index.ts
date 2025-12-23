@@ -46,8 +46,8 @@ export { verifyDocument } from "./verification/gateway";
 export { topUpWallet, checkAndDeductCredits } from "./billing/service";
 export { aggregateHourlyStats } from "./analytics";
 export { processCrimeCheck } from "./verification/worker";
-export { processBatch } from "./verification/batch";
 export { generateCertificate } from "./verification/certificate";
+export { processBatch } from "./verification/batch";
 export { checkApiHealth } from "./health";
 
 /**

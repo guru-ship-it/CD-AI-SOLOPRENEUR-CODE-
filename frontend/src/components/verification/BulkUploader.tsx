@@ -1,9 +1,10 @@
-import React, { useState, useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
+import React, { useState } from 'react';
 import Papa from 'papaparse';
-import { Upload, FileText, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { FileText, CheckCircle2, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
 import { TactileButton } from '../ui/TactileButton';
+import { Dropzone } from './Dropzone';
 import { toast } from 'sonner';
+import { cn } from '../../utils/cn';
 
 interface BulkUploaderProps {
     onBatchSubmit: (data: any[]) => Promise<void>;
@@ -12,41 +13,50 @@ interface BulkUploaderProps {
 export const BulkUploader: React.FC<BulkUploaderProps> = ({ onBatchSubmit }) => {
     const [preview, setPreview] = useState<any[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [rawFile, setRawFile] = useState<File | null>(null);
 
-    const onDrop = useCallback((acceptedFiles: File[]) => {
-        const file = acceptedFiles[0];
-        if (file.size > 2 * 1024 * 1024) {
-            toast.error("File size exceeds 2MB limit.");
-            return;
-        }
-
+    const handleFileSelected = (file: File) => {
+        setRawFile(file);
         Papa.parse(file, {
             header: true,
             skipEmptyLines: true,
             complete: (results) => {
                 if (results.data.length > 0) {
-                    setPreview(results.data.slice(0, 50)); // Limit preview to 50
-                    toast.success(`Parsed ${results.data.length} records successfully.`);
+                    setPreview(results.data);
+                    toast.success(`Extracted ${results.data.length} records from ${file.name}`);
                 } else {
-                    toast.error("CSV file is empty or invalid.");
+                    toast.error("CSV file is empty or invalid header structure.");
                 }
             },
             error: (err) => toast.error(`Parsing Error: ${err.message}`)
         });
-    }, []);
-
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({
-        onDrop,
-        accept: { 'text/csv': ['.csv'] },
-        multiple: false
-    });
+    };
 
     const handleSubmit = async () => {
         if (preview.length === 0) return;
         setIsProcessing(true);
+
+        // Map CSV Columns to Backend Schema
+        // Expected Columns: Name, DocType, DocNumber
+        const requests = preview.map(row => ({
+            type: row.DocType || row.type || 'PAN',
+            inputs: {
+                idNumber: row.DocNumber || row.idNumber,
+                name: row.Name || row.name,
+                // Add default fields if needed
+            }
+        })).filter(req => req.inputs.idNumber);
+
+        if (requests.length === 0) {
+            toast.error("No valid document numbers found in CSV.");
+            setIsProcessing(false);
+            return;
+        }
+
         try {
-            await onBatchSubmit(preview);
+            await onBatchSubmit(requests);
             setPreview([]);
+            setRawFile(null);
         } catch (error) {
             console.error(error);
         } finally {
@@ -56,39 +66,26 @@ export const BulkUploader: React.FC<BulkUploaderProps> = ({ onBatchSubmit }) => 
 
     return (
         <div className="space-y-6">
-            {/* Dropzone */}
-            <div
-                {...getRootProps()}
-                className={`
-                    cursor-pointer border-2 border-dashed rounded-[2rem] p-12 transition-all duration-500 flex flex-col items-center justify-center gap-4
-                    ${isDragActive ? 'border-emerald-500 bg-emerald-50/50 scale-[1.02]' : 'border-slate-200 bg-white/40 hover:border-slate-300 hover:bg-white/60'}
-                `}
-            >
-                <input {...getInputProps()} />
-                <div className="w-16 h-16 rounded-3xl bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-xl shadow-emerald-200/50">
-                    <Upload className="w-8 h-8" />
-                </div>
-                <div className="text-center">
-                    <p className="text-lg font-black text-slate-900 tracking-tight uppercase">Drop drivers.csv here</p>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Columns: Name, PanNumber, Phone</p>
-                </div>
-            </div>
+            <Dropzone onFileSelected={handleFileSelected} />
 
             {/* Preview Table */}
             {preview.length > 0 && (
-                <div className="rounded-[2rem] border border-white/60 bg-white/40 overflow-hidden backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white/50">
-                        <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-emerald-500" /> Batch Preview ({preview.length} Items)
-                        </h3>
-                        <div className="flex gap-2">
+                <div className="rounded-[2.5rem] border border-white/60 bg-white/40 overflow-hidden backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-500 shadow-2xl shadow-slate-900/5">
+                    <div className="p-8 border-b border-white/60 flex justify-between items-center bg-white/40">
+                        <div>
+                            <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest flex items-center gap-2 mb-1">
+                                <FileText className="w-4 h-4 text-emerald-500" /> Forensic Batch Preview
+                            </h3>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase">Ready to process {preview.length} entities</p>
+                        </div>
+                        <div className="flex gap-3">
                             <TactileButton
-                                variant="ghost"
+                                variant="secondary"
                                 size="sm"
-                                onClick={() => setPreview([])}
+                                onClick={() => { setPreview([]); setRawFile(null); }}
                                 disabled={isProcessing}
                             >
-                                Clear
+                                Discard
                             </TactileButton>
                             <TactileButton
                                 variant="primary"
@@ -98,27 +95,31 @@ export const BulkUploader: React.FC<BulkUploaderProps> = ({ onBatchSubmit }) => 
                             >
                                 {isProcessing ? (
                                     <>
-                                        <Loader2 className="w-3 h-3 animate-spin mr-2" />
-                                        Processing...
+                                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                        Inoculating...
                                     </>
-                                ) : 'Start Batch Verification'}
+                                ) : (
+                                    <>
+                                        Run Batch Execution <ArrowRight className="w-4 h-4 ml-2" />
+                                    </>
+                                )}
                             </TactileButton>
                         </div>
                     </div>
-                    <div className="max-h-64 overflow-y-auto custom-scrollbar">
+                    <div className="max-h-96 overflow-y-auto custom-scrollbar">
                         <table className="w-full text-left border-collapse">
-                            <thead className="sticky top-0 bg-slate-50/90 backdrop-blur-md z-10">
+                            <thead className="sticky top-0 bg-white/80 backdrop-blur-md z-10 border-b border-slate-100">
                                 <tr>
                                     {Object.keys(preview[0]).map(key => (
-                                        <th key={key} className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">{key}</th>
+                                        <th key={key} className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{key}</th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody>
                                 {preview.map((row, i) => (
-                                    <tr key={i} className="border-t border-slate-50 hover:bg-white/40 transition-colors">
+                                    <tr key={i} className="group hover:bg-white/80 transition-all border-b border-slate-50/50">
                                         {Object.values(row).map((val: any, j) => (
-                                            <td key={j} className="px-6 py-4 text-xs font-bold text-slate-600 tracking-tight">{val}</td>
+                                            <td key={j} className="px-8 py-5 text-sm font-bold text-slate-600 tracking-tight group-hover:text-slate-900">{val}</td>
                                         ))}
                                     </tr>
                                 ))}

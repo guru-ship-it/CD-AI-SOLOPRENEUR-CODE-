@@ -36,59 +36,93 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.processBatch = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const admin = __importStar(require("firebase-admin"));
-const logger = __importStar(require("firebase-functions/logger"));
+const registry_1 = require("./registry");
 const service_1 = require("../billing/service");
 const interface_1 = require("../billing/interface");
-exports.processBatch = (0, https_1.onCall)({ region: "asia-south1" }, async (request) => {
-    const { items, type } = request.data;
+const api_client_1 = require("./api-client");
+const params_1 = require("firebase-functions/params");
+const proteanApiKey = (0, params_1.defineSecret)("PROTEAN_API_KEY");
+const proteanBearerToken = (0, params_1.defineSecret)("PROTEAN_BEARER_TOKEN");
+exports.processBatch = (0, https_1.onCall)({
+    secrets: [proteanApiKey, proteanBearerToken],
+    region: "asia-south1",
+    timeoutSeconds: 300
+}, async (request) => {
+    const { requests } = request.data;
     const auth = request.auth;
-    if (!auth)
-        throw new https_1.HttpsError("unauthenticated", "Auth required.");
-    if (!Array.isArray(items))
-        throw new https_1.HttpsError("invalid-argument", "Items must be an array.");
+    if (!auth) {
+        throw new https_1.HttpsError("unauthenticated", "User must be authenticated.");
+    }
+    if (!Array.isArray(requests) || requests.length === 0) {
+        throw new https_1.HttpsError("invalid-argument", "Requests must be a non-empty array.");
+    }
     const tenantId = auth.token.tenantId || "MASTER_TENANT";
     const batchId = `BATCH_${Date.now()}`;
-    const db = admin.firestore();
-    logger.info(`Batch Job Started: ${batchId} for ${tenantId}. Items: ${items.length}`);
-    await db.collection('batch_jobs').doc(batchId).set({
+    const batchRef = admin.firestore().collection('batch_jobs').doc(batchId);
+    await batchRef.set({
         tenantId,
-        type,
-        totalItems: items.length,
-        processedItems: 0,
+        userId: auth.uid,
         status: 'PROCESSING',
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        totalItems: requests.length,
+        processedItems: 0,
+        successCount: 0,
+        failedCount: 0,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
-    (async () => {
-        for (let i = 0; i < items.length; i++) {
-            try {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                await (0, service_1.checkAndDeductCredits)(tenantId, interface_1.VERIFICATION_COST);
-                const item = items[i];
-                const result = {
-                    isValid: true,
-                    legalName: item.Name || item.name,
-                    timestamp: admin.firestore.FieldValue.serverTimestamp()
-                };
-                await db.collection('verifications').add({
-                    ...result,
-                    tenantId,
-                    type,
-                    batchId,
-                    inputs: item
-                });
-                await db.collection('batch_jobs').doc(batchId).update({
-                    processedItems: admin.firestore.FieldValue.increment(1)
-                });
-            }
-            catch (error) {
-                logger.error(`Batch Item ${i} Failed:`, error);
-            }
+    const results = [];
+    for (const [index, item] of requests.entries()) {
+        const { type, inputs } = item;
+        let result;
+        try {
+            const adapter = registry_1.ADAPTER_REGISTRY[type];
+            if (!adapter)
+                throw new Error(`Unsupported type: ${type}`);
+            await (0, service_1.checkAndDeductCredits)(tenantId, interface_1.VERIFICATION_COST);
+            const payload = adapter.buildRequest(inputs);
+            const response = await (0, api_client_1.resilientCall)({
+                method: adapter.method,
+                url: adapter.endpoint,
+                data: payload,
+                headers: {
+                    'content-type': 'application/json',
+                    'apikey': proteanApiKey.value(),
+                    'Authorization': `Bearer ${proteanBearerToken.value()}`
+                }
+            });
+            result = adapter.normalizeResponse(response.data);
+            const verificationId = `CERT_${admin.firestore().collection('verifications').doc().id}`;
+            await admin.firestore().collection('verifications').doc(verificationId).set({
+                tenantId,
+                userId: auth.uid,
+                batchId,
+                type,
+                inputs,
+                result,
+                timestamp: admin.firestore.FieldValue.serverTimestamp(),
+                status: result.isValid ? 'VALID' : 'FAILED',
+                sourceAuthority: adapter.sourceAuthority || 'National Database'
+            });
+            results.push({ index, success: true, verificationId, isValid: result.isValid });
         }
-        await db.collection('batch_jobs').doc(batchId).update({
-            status: 'COMPLETED',
-            completedAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-    })().catch(err => logger.error("Batch Loop Fatal Error:", err));
-    return { batchId, status: 'PROCESSING', message: 'Batch verification engine engaged.' };
+        catch (error) {
+            console.error(`Batch item ${index} failed:`, error.message);
+            results.push({ index, success: false, error: error.message });
+        }
+        if (index < requests.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        if ((index + 1) % 5 === 0 || index === requests.length - 1) {
+            const successCount = results.filter(r => r.success && r.isValid).length;
+            const failedCount = results.length - successCount;
+            await batchRef.update({
+                processedItems: index + 1,
+                successCount,
+                failedCount,
+                status: (index === requests.length - 1) ? 'COMPLETED' : 'PROCESSING',
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+        }
+    }
+    return { batchId, summary: { total: requests.length, processed: results.length } };
 });
 //# sourceMappingURL=batch.js.map

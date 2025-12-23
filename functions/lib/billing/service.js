@@ -49,7 +49,6 @@ class BillingService {
                     balance: 0,
                     currency: 'INR',
                     lowBalanceThreshold: 1000,
-                    transactions: []
                 };
                 transaction.set(walletRef, newWallet);
                 throw new Error('INSUFFICIENT_BALANCE: New wallet created with 0 balance.');
@@ -59,6 +58,7 @@ class BillingService {
                 throw new Error(`INSUFFICIENT_BALANCE: Required ${interface_1.VERIFICATION_COST}, available ${wallet.balance}`);
             }
             const newBalance = wallet.balance - interface_1.VERIFICATION_COST;
+            const txRef = walletRef.collection('transactions').doc();
             const newTransaction = {
                 amount: interface_1.VERIFICATION_COST,
                 type: 'DEBIT',
@@ -66,10 +66,8 @@ class BillingService {
                 timestamp: new Date(),
                 description: `Identity Verification - ${referenceId}`
             };
-            transaction.update(walletRef, {
-                balance: newBalance,
-                transactions: admin.firestore.FieldValue.arrayUnion(newTransaction)
-            });
+            transaction.update(walletRef, { balance: newBalance });
+            transaction.set(txRef, newTransaction);
             if (newBalance <= wallet.lowBalanceThreshold) {
                 logger.warn(`LOW_BALANCE: Tenant ${tenantId} reached threshold. Current: ${newBalance}`);
             }
@@ -77,6 +75,7 @@ class BillingService {
     }
     static async addCredits(tenantId, amount, paymentId) {
         const walletRef = this.db.collection(WALLETS_COLLECTION).doc(tenantId);
+        const txRef = walletRef.collection('transactions').doc();
         const newTransaction = {
             amount,
             type: 'CREDIT',
@@ -84,10 +83,12 @@ class BillingService {
             timestamp: new Date(),
             description: 'Wallet Top-up'
         };
-        await walletRef.set({
-            balance: admin.firestore.FieldValue.increment(amount),
-            transactions: admin.firestore.FieldValue.arrayUnion(newTransaction)
-        }, { merge: true });
+        await this.db.runTransaction(async (t) => {
+            t.set(walletRef, {
+                balance: admin.firestore.FieldValue.increment(amount)
+            }, { merge: true });
+            t.set(txRef, newTransaction);
+        });
         logger.info(`CREDIT_ADDED: Added ${amount} to tenant ${tenantId}`);
     }
     static async getBalance(tenantId) {
@@ -121,15 +122,25 @@ const checkAndDeductCredits = async (tenantId, cost) => {
     const firestore = admin.firestore();
     return firestore.runTransaction(async (t) => {
         const docRef = firestore.collection('wallets').doc(tenantId);
+        const txRef = docRef.collection('transactions').doc();
         const doc = await t.get(docRef);
         if (!doc.exists) {
             throw new https_1.HttpsError('not-found', 'Wallet not found for this tenant.');
         }
-        const newBalance = doc.data().balance - cost;
+        const currentBalance = doc.data().balance;
+        const newBalance = currentBalance - cost;
         if (newBalance < 0) {
             throw new https_1.HttpsError('resource-exhausted', 'Insufficient Credits. Please Top Up.');
         }
+        const transaction = {
+            amount: cost,
+            type: 'DEBIT',
+            referenceId: `AUTO_${Date.now()}`,
+            timestamp: new Date(),
+            description: 'Automated Identity Verification'
+        };
         t.update(docRef, { balance: newBalance });
+        t.set(txRef, transaction);
         return { newBalance };
     });
 };

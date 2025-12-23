@@ -2,6 +2,8 @@ export interface StandardResult {
     isValid: boolean;
     legalName?: string;
     dob?: string;
+    address?: string;
+    photoBase64?: string;
     rawResponse: any; // For audit logs
     error?: string;
 }
