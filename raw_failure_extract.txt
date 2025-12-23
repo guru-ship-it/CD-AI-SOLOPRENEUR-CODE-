@@ -1,0 +1,219 @@
+﻿
+  retry_debug.log:96:[
+2025-12-23T16:32:37.32
+5Z] Checked if tokens 
+are valid: true, 
+expires at: 
+1766510179135
+  retry_debug.log:97:[
+2025-12-23T16:32:37.32
+5Z] Checked if tokens 
+are valid: true, 
+expires at: 
+1766510179135
+  retry_debug.log:98:[
+2025-12-23T16:32:37.32
+6Z] >>> 
+[apiv2][query] GET htt
+ps://secretmanager.goo
+gleapis.com/v1/project
+s/antigravitycomplianc
+edeskai/secrets/PROTEA
+N_API_KEY [none]
+> retry_debug.log:99:[
+2025-12-23T16:32:37.70
+2Z] <<< 
+[apiv2][status] GET ht
+tps://secretmanager.go
+ogleapis.com/v1/projec
+ts/antigravitycomplian
+cedeskai/secrets/PROTE
+AN_API_KEY 403
+> retry_debug.log:100:
+[2025-12-23T16:32:37.7
+02Z] <<< 
+[apiv2][body] GET http
+s://secretmanager.goog
+leapis.com/v1/projects
+/antigravitycompliance
+deskai/secrets/PROTEAN
+_API_KEY {"error":{"co
+de":403,"message":"Sec
+ret Manager API has 
+not been used in 
+project antigravitycom
+pliancedeskai before 
+or it is disabled. 
+Enable it by visiting 
+https://console.develo
+pers.google.com/apis/a
+pi/secretmanager.googl
+eapis.com/overview?pro
+ject=antigravitycompli
+ancedeskai then 
+retry. If you enabled 
+this API recently, 
+wait a few minutes 
+for the action to 
+propagate to our 
+systems and retry.","s
+tatus":"PERMISSION_DEN
+IED","details":[{"@typ
+e":"type.googleapis.co
+m/google.rpc.ErrorInfo
+","reason":"SERVICE_DI
+SABLED","domain":"goog
+leapis.com","metadata"
+:{"consumer":"projects
+/antigravitycompliance
+deskai","containerInfo
+":"antigravitycomplian
+cedeskai","serviceTitl
+e":"Secret Manager API
+","service":"secretman
+ager.googleapis.com","
+activationUrl":"https:
+//console.developers.g
+oogle.com/apis/api/sec
+retmanager.googleapis.
+com/overview?project=a
+ntigravitycompliancede
+skai"}},{"@type":"type
+.googleapis.com/google
+.rpc.LocalizedMessage"
+,"locale":"en-US","mes
+sage":"Secret Manager 
+API has not been used 
+in project antigravity
+compliancedeskai 
+before or it is 
+disabled. Enable it 
+by visiting https://co
+nsole.developers.googl
+e.com/apis/api/secretm
+anager.googleapis.com/
+overview?project=antig
+ravitycompliancedeskai
+ then retry. If you 
+enabled this API 
+recently, wait a few 
+minutes for the 
+action to propagate 
+to our systems and ret
+ry."},{"@type":"type.g
+oogleapis.com/google.r
+pc.Help","links":[{"de
+scription":"Google 
+developers console 
+API activation","url":
+"https://console.devel
+opers.google.com/apis/
+api/secretmanager.goog
+leapis.com/overview?pr
+oject=antigravitycompl
+iancedeskai"}]}]}}
+  retry_debug.log:101:
+> retry_debug.log:102:
+Error: Request to http
+s://secretmanager.goog
+leapis.com/v1/projects
+/antigravitycompliance
+deskai/secrets/PROTEAN
+_API_KEY had HTTP 
+Error: 403, Secret 
+Manager API has not 
+been used in project a
+ntigravitycompliancede
+skai before or it is 
+disabled. Enable it 
+by visiting https://co
+nsole.developers.googl
+e.com/apis/api/secretm
+anager.googleapis.com/
+overview?project=antig
+ravitycompliancedeskai
+ then retry. If you 
+enabled this API 
+recently, wait a few 
+minutes for the 
+action to propagate 
+to our systems and 
+retry.
+> retry_debug.log:103:
+[2025-12-23T16:32:37.8
+46Z] Error Context: {
+  
+retry_debug.log:104:  
+"body": {
+> 
+retry_debug.log:105:  
+  "error": {
+> 
+retry_debug.log:106:  
+    "code": 403,
+  
+retry_debug.log:107:  
+    "message": 
+"Secret Manager API 
+has not been used in 
+project antigravitycom
+pliancedeskai before 
+or it is disabled. 
+Enable it by visiting 
+https://console.develo
+pers.google.com/apis/a
+pi/secretmanager.googl
+eapis.com/overview?pro
+ject=antigravitycompli
+ancedeskai then 
+retry. If you enabled 
+this API recently, 
+wait a few minutes 
+for the action to 
+propagate to our 
+systems and retry.",
+  
+retry_debug.log:108:  
+    "status": 
+"PERMISSION_DENIED",
+  
+retry_debug.log:109:  
+    "details": [
+  
+retry_debug.log:110:  
+      {
+> 
+retry_debug.log:111:  
+        "@type": "type
+.googleapis.com/google
+.rpc.ErrorInfo",
+  
+retry_debug.log:112:  
+        "reason": 
+"SERVICE_DISABLED",
+  
+retry_debug.log:113:  
+        "domain": 
+"googleapis.com",
+  
+retry_debug.log:114:  
+        "metadata": {
+  
+retry_debug.log:137:  
+  }
+  
+retry_debug.log:138:  
+},
+  
+retry_debug.log:139:  
+"response": {
+> 
+retry_debug.log:140:  
+  "statusCode": 403
+  
+retry_debug.log:141:  
+}
+  
+retry_debug.log:142:}
+
+

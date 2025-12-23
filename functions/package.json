@@ -2,6 +2,9 @@
     "name": "functions",
     "description": "Cloud Functions for Compliance Desk AI",
     "main": "lib/index.js",
+    "engines": {
+        "node": "20"
+    },
     "scripts": {
         "build": "tsc",
         "lint": "eslint .",

@@ -37,7 +37,7 @@ const MOCK_MFA_CODE = '123456';
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Simulator: Always logged in as Guru
     const [user, setUser] = useState<User | null>(MOCK_USER);
-    const [isMFAVerified, setIsMFAVerified] = useState(false);
+    const [isMFAVerified, setIsMFAVerified] = useState(true);
     const [sessionId] = useState(Math.random().toString(36).substring(7));
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes

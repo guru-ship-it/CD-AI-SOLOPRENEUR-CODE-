@@ -1,4 +1,4 @@
-import { onRequest, onCall, HttpsError } from "firebase-functions/v2/https";
+import { onRequest, onCall } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import * as logger from "firebase-functions/logger";
 import * as admin from "firebase-admin";

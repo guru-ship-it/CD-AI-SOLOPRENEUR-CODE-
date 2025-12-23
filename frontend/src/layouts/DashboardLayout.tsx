@@ -2,34 +2,26 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Sidebar } from '../components/layout/Sidebar';
-import { MFAModal } from '../components/ui/MFAModal';
+
 import { BhashaSwitcher } from '../components/ui/BhashaSwitcher';
 import { StatusBanner } from '../components/layout/StatusBanner';
 import { Bell } from 'lucide-react';
 import { cn } from '../utils/cn';
 
 export const DashboardLayout = ({ children }: { children?: React.ReactNode }) => {
-    const { user, isMFAVerified, verifyMFA } = useAuth();
+    const { user } = useAuth();
 
     return (
         <div className="flex h-screen bg-[#F8FAFC] text-slate-900 font-sans overflow-hidden">
             {/* Security Challenge Overlay */}
-            {(!isMFAVerified) && (
-                <MFAModal
-                    isOpen={!isMFAVerified}
-                    onClose={() => { }}
-                    onSuccess={(code) => verifyMFA(code)}
-                    actionLabel="Dashboard Access"
-                />
-            )}
+            {/* Security Challenge Overlay - Disabled */}
 
             {/* SIDEBAR - Clean White (Logic moved to Sidebar component) */}
             <Sidebar />
 
             {/* MAIN CONTENT AREA */}
             <main className={cn(
-                "flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-500",
-                !isMFAVerified && "blur-xl"
+                "flex-1 flex flex-col min-w-0 overflow-hidden transition-all duration-500"
             )}>
                 {/* Top Bar - Glass White */}
                 <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-8 sticky top-0 z-20">

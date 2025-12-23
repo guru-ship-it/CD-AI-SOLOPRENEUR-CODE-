@@ -100,7 +100,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export const Sidebar = () => {
-    const { user, isMFAVerified } = useAuth();
+    const { user } = useAuth();
 
     const filteredItems = NAV_ITEMS.filter(item =>
         item.roles.includes(user?.role || 'USER')
@@ -108,8 +108,7 @@ export const Sidebar = () => {
 
     return (
         <aside className={cn(
-            "w-64 bg-white border-r border-slate-200 flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20 flex-shrink-0 relative overflow-hidden transition-all duration-500",
-            !isMFAVerified && "blur-xl"
+            "w-64 bg-white border-r border-slate-200 flex flex-col shadow-[4px_0_24px_rgba(0,0,0,0.02)] z-20 flex-shrink-0 relative overflow-hidden transition-all duration-500"
         )}>
             <div className="h-full flex flex-col">
 
