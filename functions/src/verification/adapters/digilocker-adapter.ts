@@ -1,8 +1,9 @@
 import { VerificationAdapter, StandardResult } from "../interface";
 
 export class DigiLockerAdapter implements VerificationAdapter {
-    endpoint = "https://uat.risewithprotean.io/api/v2/digilocker/user/details";
+    endpoint = "https://api.digitallocker.gov.in/public/oauth2/1/token";
     method: "POST" = "POST";
+    sourceAuthority = "DigiLocker (MeitY)";
 
     buildRequest(inputs: any) {
         return { access_token: inputs.accessToken };

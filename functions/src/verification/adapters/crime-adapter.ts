@@ -3,6 +3,7 @@ import { VerificationAdapter, StandardResult } from "../interface";
 export class CrimeAdapter implements VerificationAdapter {
     endpoint = "https://api.protean.com/v1/crime-check"; // Placeholder
     method: "POST" = "POST";
+    sourceAuthority = "Sovereign Police Databases";
 
     buildRequest(inputs: any) {
         return {

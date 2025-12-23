@@ -1,8 +1,9 @@
 import { VerificationAdapter, StandardResult } from "../interface";
 
 export class SingaporeAdapter implements VerificationAdapter {
-    endpoint = "https://api.compliance-desk.ai/v1/verify/singapore"; // Mock endpoint
-    method: "POST" = "POST";
+    endpoint = "https://api.myinfo.gov.sg/v3/person-sample";
+    method: "GET" = "GET";
+    sourceAuthority = "GovTech Singapore (MyInfo)";
 
     buildRequest(inputs: any) {
         return {

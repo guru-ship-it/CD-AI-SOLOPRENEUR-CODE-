@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
-import * as PDFDocument from "pdfkit";
-import * as QRCode from "qrcode";
+import PDFDocument from "pdfkit";
+import QRCode from "qrcode";
 import { getStorage } from "firebase-admin/storage";
 
 export const generateCertificate = onCall({ region: "asia-south1" }, async (request) => {
@@ -34,7 +34,7 @@ export const generateCertificate = onCall({ region: "asia-south1" }, async (requ
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
     const chunks: any[] = [];
 
-    doc.on('data', chunk => chunks.push(chunk));
+    doc.on('data', (chunk: any) => chunks.push(chunk));
 
     // --- Header ---
     doc.fontSize(20).text("ComplianceDesk.ai", { align: 'left' });

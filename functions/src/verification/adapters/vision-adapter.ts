@@ -4,8 +4,9 @@ import { ImageAnnotatorClient } from "@google-cloud/vision";
 const visionClient = new ImageAnnotatorClient();
 
 export class VisionAdapter implements VerificationAdapter {
-    endpoint = "GOOGLE_VISION_INTERNAL";
+    endpoint = "https://vision.googleapis.com/v1/images:annotate";
     method: "POST" = "POST";
+    sourceAuthority = "ComplianceDesk Vision Engine";
 
     buildRequest(inputs: { imageBase64: string }) {
         return {

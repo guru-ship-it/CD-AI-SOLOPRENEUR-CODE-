@@ -48,6 +48,7 @@ export { aggregateHourlyStats } from "./analytics";
 export { processCrimeCheck } from "./verification/worker";
 export { processBatch } from "./verification/batch";
 export { generateCertificate } from "./verification/certificate";
+export { checkApiHealth } from "./health";
 
 /**
  * Legacy Support Proxy

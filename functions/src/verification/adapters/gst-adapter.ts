@@ -1,8 +1,9 @@
 import { VerificationAdapter, StandardResult } from "../interface";
 
 export class GSTAdapter implements VerificationAdapter {
-    endpoint = "https://api.protean.com/verification/gst";
+    endpoint = "https://uat.risewithprotean.io/api/v2/gst/verify";
     method: "POST" = "POST";
+    sourceAuthority = "GSTN (Goods and Services Tax Network)";
 
     buildRequest(inputs: { gstNumber: string }): object {
         return {

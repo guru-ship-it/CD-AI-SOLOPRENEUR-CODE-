@@ -1,6 +1,7 @@
 import React from 'react';
 import { Toaster } from 'sonner';
 import { WatermarkOverlay } from '../security/WatermarkOverlay';
+import { StatusBanner } from './StatusBanner';
 
 export const Shell = ({ children }: { children: React.ReactNode }) => {
     return (
@@ -8,6 +9,7 @@ export const Shell = ({ children }: { children: React.ReactNode }) => {
             <Toaster position="top-right" expand={false} richColors closeButton />
             <WatermarkOverlay>
                 <main className="relative">
+                    <StatusBanner />
                     {children}
                 </main>
             </WatermarkOverlay>

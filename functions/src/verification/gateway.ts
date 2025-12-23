@@ -1,5 +1,5 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
-import axios from "axios";
+import { resilientCall } from "./api-client";
 import * as admin from "firebase-admin";
 import { defineSecret } from "firebase-functions/params";
 import { ADAPTER_REGISTRY } from "./registry";
@@ -52,7 +52,7 @@ export const verifyDocument = onCall({ secrets: [proteanApiKey, proteanBearerTok
         const payload = adapter.buildRequest(inputs);
 
         // 5. Secure Call (Injecting Secrets Centrally)
-        const response = await axios({
+        const response = await resilientCall({
             method: adapter.method,
             url: adapter.endpoint,
             data: payload,

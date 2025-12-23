@@ -1,8 +1,9 @@
 import { VerificationAdapter, StandardResult } from "../interface";
 
 export class VoterAdapter implements VerificationAdapter {
-    endpoint = "https://api.protean.com/verification/voter";
+    endpoint = "https://uat.risewithprotean.io/api/v2/voter/verify";
     method: "POST" = "POST";
+    sourceAuthority = "Election Commission of India";
 
     buildRequest(inputs: { idNumber: string }): object {
         return {

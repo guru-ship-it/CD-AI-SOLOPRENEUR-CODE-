@@ -1,9 +1,9 @@
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
-import axios from "axios";
-import { ImageAnnotatorClient } from "@google-cloud/vision";
 import { TranslationServiceClient } from "@google-cloud/translate";
+import { ImageAnnotatorClient } from "@google-cloud/vision";
 import { getNitiResponse } from "./gemini";
+import { resilientCall } from "./verification/api-client";
 
 const visionClient = new ImageAnnotatorClient();
 const translateClient = new TranslationServiceClient();
@@ -121,13 +121,17 @@ async function downloadMedia(mediaId: string): Promise<Buffer | null> {
 
     try {
         // 1. Get Media URL
-        const urlResponse = await axios.get(`https://graph.facebook.com/v17.0/${mediaId}`, {
+        const urlResponse = await resilientCall({
+            method: 'GET',
+            url: `https://graph.facebook.com/v17.0/${mediaId}`,
             headers: { Authorization: `Bearer ${WHATSAPP_ACCESS_TOKEN}` }
         });
         const mediaUrl = urlResponse.data.url;
 
         // 2. Download Media Content
-        const mediaResponse = await axios.get(mediaUrl, {
+        const mediaResponse = await resilientCall({
+            method: 'GET',
+            url: mediaUrl,
             headers: { Authorization: `Bearer ${WHATSAPP_ACCESS_TOKEN}` },
             responseType: "arraybuffer"
         });
@@ -194,21 +198,20 @@ export async function sendWhatsAppMessage(to: string, text: string) {
     }
 
     try {
-        await axios.post(
-            `https://graph.facebook.com/v17.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`,
-            {
+        await resilientCall({
+            method: 'POST',
+            url: `https://graph.facebook.com/v17.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`,
+            data: {
                 messaging_product: "whatsapp",
                 to: to,
                 type: "text",
                 text: { body: text },
             },
-            {
-                headers: {
-                    Authorization: `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
-                    "Content-Type": "application/json",
-                },
-            }
-        );
+            headers: {
+                Authorization: `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
+                "Content-Type": "application/json",
+            },
+        });
     } catch (error: any) {
         logger.error("Error sending WhatsApp message", error.response?.data || error.message);
     }
