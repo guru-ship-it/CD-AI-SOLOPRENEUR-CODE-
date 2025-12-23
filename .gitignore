@@ -41,3 +41,7 @@ dummy_pdf_output.txt
 workspace-key.json
 .cache/
 **/cloudcode_cli
+# Node
+node_modules/
+dist/
+

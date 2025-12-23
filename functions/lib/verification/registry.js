@@ -7,6 +7,8 @@ const digilocker_adapter_1 = require("./adapters/digilocker-adapter");
 const singapore_adapter_1 = require("./adapters/singapore-adapter");
 const vision_adapter_1 = require("./adapters/vision-adapter");
 const crime_adapter_1 = require("./adapters/crime-adapter");
+const gst_adapter_1 = require("./adapters/gst-adapter");
+const voter_adapter_1 = require("./adapters/voter-adapter");
 exports.ADAPTER_REGISTRY = {
     "PAN": new pan_adapter_1.PanAdapter(),
     "DRIVING_LICENSE": new dl_adapter_1.DLAdapter(),
@@ -14,5 +16,7 @@ exports.ADAPTER_REGISTRY = {
     "SINGAPORE": new singapore_adapter_1.SingaporeAdapter(),
     "VISION": new vision_adapter_1.VisionAdapter(),
     "CRIME_CHECK": new crime_adapter_1.CrimeAdapter(),
+    "GST": new gst_adapter_1.GSTAdapter(),
+    "VOTER": new voter_adapter_1.VoterAdapter(),
 };
 //# sourceMappingURL=registry.js.map
