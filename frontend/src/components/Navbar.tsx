@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Logo } from './Logo';
 import { Eye, EyeOff } from 'lucide-react';
 

@@ -1,6 +1,14 @@
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
+import { ShieldCheck, Mail, Lock, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useAuth } from '../context/AuthContext';
 import { BhashaSwitcher } from '../components/ui/BhashaSwitcher';
 import { ConsentModal } from '../components/ui/ConsentModal';
-import { useTranslation } from 'react-i18next';
+import { NitiMascot } from '../components/ui/NitiMascot';
+import { TactileButton } from '../components/ui/TactileButton';
 
 export const Login = () => {
     const { t } = useTranslation();

@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { WalletCard } from '../components/billing/WalletCard';
 import { BulkUploader } from '../components/verification/BulkUploader';
 import VerificationGrid from '../components/verification/VerificationGrid';
-import { VERIFICATION_TYPES, VerificationType } from '../types/verification';
+import { VERIFICATION_TYPES, type VerificationType } from '../types/verification';
 import { cn } from '../utils/cn';
 
 interface VerificationResult {
@@ -305,9 +305,9 @@ export const VerificationTerminal: React.FC = () => {
                                                             <h4 className="text-xl font-bold text-slate-900 tracking-tight leading-none">
                                                                 {result.legalName || 'Unknown Identity'}
                                                             </h4>
-                                                            {result.rawResponse?.jobId && (
+                                                            {String(result.rawResponse?.jobId) && (
                                                                 <p className="text-[10px] font-black text-[#4285F4] mt-2 uppercase tracking-widest font-mono">
-                                                                    ASYNC JOB STARTED: {result.rawResponse.jobId}
+                                                                    ASYNC JOB STARTED: {String(result.rawResponse?.jobId)}
                                                                 </p>
                                                             )}
                                                         </div>
@@ -341,7 +341,7 @@ export const VerificationTerminal: React.FC = () => {
                                                                 variant="primary"
                                                                 size="sm"
                                                                 className="bg-[#4285F4] hover:bg-blue-600 shadow-lg shadow-blue-500/20"
-                                                                onClick={() => handleDownloadCertificate(result.verificationId)}
+                                                                onClick={() => handleDownloadCertificate(result.verificationId!)}
                                                                 disabled={loading}
                                                             >
                                                                 {loading ? 'Generating...' : 'Download Audit Proof'}

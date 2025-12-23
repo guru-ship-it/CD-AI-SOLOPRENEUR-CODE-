@@ -170,9 +170,9 @@ export const AnalyticsDashboard: React.FC = () => {
                                 { name: 'VTR', val: 40 },
                                 { name: 'OTH', val: 20 },
                             ]}>
-                                <Bar dataKey="val">
+                                <Bar dataKey="val" radius={[4, 4, 0, 0]}>
                                     {COLORS.map((color, index) => (
-                                        <Cell key={`cell-${index}`} fill={color} radius={[4, 4, 0, 0]} />
+                                        <Cell key={`cell-${index}`} fill={color} />
                                     ))}
                                 </Bar>
                             </BarChart>

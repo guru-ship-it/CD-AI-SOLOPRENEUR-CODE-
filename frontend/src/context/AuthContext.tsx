@@ -16,6 +16,7 @@ interface AuthContextType {
     user: User | null;
     isMFAVerified: boolean;
     verifyMFA: (code: string) => Promise<boolean>;
+    login: (email: string, password: string) => Promise<void>;
     logout: () => void;
 }
 
@@ -40,6 +41,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [sessionId] = useState(Math.random().toString(36).substring(7));
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
     const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+
+    const login = async (_email: string, _password: string) => {
+        // Simulation login
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setUser(MOCK_USER);
+    };
 
     const logout = useCallback(() => {
         setUser(null);
@@ -120,7 +127,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, isMFAVerified, verifyMFA, logout }}>
+        <AuthContext.Provider value={{ user, isMFAVerified, verifyMFA, login, logout }}>
             {children}
         </AuthContext.Provider>
     );

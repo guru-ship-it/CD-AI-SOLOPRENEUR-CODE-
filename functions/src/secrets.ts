@@ -8,3 +8,6 @@ export const proteanBearerToken = defineSecret("PROTEAN_BEARER_TOKEN");
 export const sendgridKey = defineSecret("SENDGRID_API_KEY");
 export const waToken = defineSecret("WHATSAPP_ACCESS_TOKEN");
 export const waPhoneId = defineSecret("WHATSAPP_PHONE_ID");
+
+// Billing Secrets
+export const razorpayKey = defineSecret("RAZORPAY_KEY");

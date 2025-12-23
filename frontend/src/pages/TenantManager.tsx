@@ -1,7 +1,5 @@
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Building2, MoreHorizontal, CheckCircle2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { ValidatedInput } from '../components/ui/ValidatedInput';
@@ -18,7 +16,6 @@ import { MFAModal } from '../components/ui/MFAModal';
 
 export const TenantManager = () => {
     const { user, isMFAVerified } = useAuth();
-    const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
     const [showMFAModal, setShowMFAModal] = useState(false);
@@ -209,7 +206,6 @@ export const TenantManager = () => {
                                 type="email"
                                 value={newCompany.email}
                                 onChange={(e) => setNewCompany({ ...newCompany, email: e.target.value })}
-                                validator={validateEmail}
                                 validator={validateEmail}
                                 errorMessage="Please enter a valid enterprise email."
                             />

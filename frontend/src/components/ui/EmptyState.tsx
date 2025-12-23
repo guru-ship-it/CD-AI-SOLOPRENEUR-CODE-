@@ -1,4 +1,3 @@
-import React from 'react';
 import { FileSearch } from 'lucide-react';
 
 export const EmptyState = ({ onAction }: { onAction: () => void }) => {

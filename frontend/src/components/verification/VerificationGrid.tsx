@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { CreditCard, Fingerprint, Car, Scale, Building2, Plane, ArrowRight } from 'lucide-react';
 
 const verificationTypes = [

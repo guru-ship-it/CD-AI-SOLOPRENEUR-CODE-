@@ -1,4 +1,4 @@
-import { motion, HTMLMotionProps } from 'framer-motion';
+import { motion, type HTMLMotionProps } from 'framer-motion';
 import { cn } from '../../utils/cn';
 
 interface TactileButtonProps extends HTMLMotionProps<"button"> {

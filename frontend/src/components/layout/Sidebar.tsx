@@ -8,7 +8,8 @@ import {
     CreditCard,
     ShieldCheck,
     CheckCircle2,
-    Settings
+    Settings,
+    FileText
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 

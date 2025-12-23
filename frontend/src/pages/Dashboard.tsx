@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ShieldCheck, Building2, UserCircle, LogOut, Search, Filter, Lock } from 'lucide-react';
+import { Building2, UserCircle, Search, Filter, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { GlassCard } from '../components/ui/GlassCard';
 import { TactileButton } from '../components/ui/TactileButton';
@@ -10,7 +10,7 @@ import { BreachTimer } from '../components/governance/BreachTimer';
 import { NitiMascot } from '../components/ui/NitiMascot';
 import { Skeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
-import { cn } from '../utils/cn';
+// import { cn } from '../utils/cn';
 
 const API_URL = "http://localhost:8000";
 
@@ -57,21 +57,7 @@ export const Dashboard = () => {
         );
     };
 
-    const handleIncidentToggle = async () => {
-        if (confirm("🚨 TRIGER EMERGENCY PROTOCOL? \n\nThis will activate the 72-hour reporting countdown for all regulators.")) {
-            try {
-                await fetch(`${API_URL}/incidents`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ description: "Manual Admin Emergency Trigger", tenant_name: "Master Admin" })
-                });
-                toast.error("INCIDENT DECLARED. Breach Protocol Live.", { duration: 5000 });
-                setIncidentActive(true);
-            } catch (err) {
-                toast.error("Failed to declare incident");
-            }
-        }
-    };
+
 
     return (
         <div className="p-0 space-y-8">
@@ -195,47 +181,49 @@ export const Dashboard = () => {
                                         <td className="px-8 py-5"><Skeleton className="h-8 w-16 ml-auto" /></td>
                                     </tr>
                                 ))
-                            ) : verifications.length > 0 ? (verifications.slice(0, 10).map((v, idx) => {
-                                // NRIC Masking Simulation for demonstration
-                                const isDemoUser = v.applicant_name === 'Arjun Kumar';
-                                const maskedID = isDemoUser ? "S****421G" : `ID-${v.task_id.toString().slice(-4)}`;
+                            ) : verifications.length > 0 ? (
+                                verifications.slice(0, 10).map((v, idx) => {
+                                    // NRIC Masking Simulation for demonstration
+                                    const isDemoUser = v.applicant_name === 'Arjun Kumar';
+                                    const maskedID = isDemoUser ? "S****421G" : `ID-${v.task_id.toString().slice(-4)}`;
 
-                                return (
-                                    <motion.tr
-                                        key={idx}
-                                        initial={{ opacity: 0, y: 5 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.1 + (idx * 0.05) }}
-                                        className="group hover:bg-slate-50/80 transition-all cursor-crosshair"
-                                    >
-                                        <td className="px-8 py-5 font-mono text-[11px] text-slate-500 tabular-nums">{v.created_at}</td>
-                                        <td className="px-8 py-5">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-[#4285F4]/10 group-hover:text-[#4285F4] transition-colors border border-slate-100">
-                                                    <UserCircle className="w-4 h-4" />
+                                    return (
+                                        <motion.tr
+                                            key={idx}
+                                            initial={{ opacity: 0, y: 5 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.1 + (idx * 0.05) }}
+                                            className="group hover:bg-slate-50/80 transition-all cursor-crosshair"
+                                        >
+                                            <td className="px-8 py-5 font-mono text-[11px] text-slate-500 tabular-nums">{v.created_at}</td>
+                                            <td className="px-8 py-5">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center text-slate-400 group-hover:bg-[#4285F4]/10 group-hover:text-[#4285F4] transition-colors border border-slate-100">
+                                                        <UserCircle className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-slate-900 text-sm">{maskedID}</p>
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{v.applicant_name}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="font-bold text-slate-900 text-sm">{maskedID}</p>
-                                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{v.applicant_name}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-5 text-center">
-                                            <Badge variant={v.status === 'COMPLETED' ? 'success' : v.status === 'UNDER_REVIEW' ? 'warning' : 'neutral'} dot>
-                                                {v.status}
-                                            </Badge>
-                                        </td>
-                                        <td className="px-8 py-5 text-center">
-                                            <span className="text-[10px] font-black text-[#4285F4] tabular-nums">99.9%</span>
-                                        </td>
-                                        <td className="px-8 py-5 text-right">
-                                            <TactileButton variant="ghost" size="sm" className="text-[10px] uppercase font-black tracking-widest text-[#4285F4]">
-                                                Log
-                                            </TactileButton>
-                                        </td>
-                                    </motion.tr>
-                                )
-                            }) : (
+                                            </td>
+                                            <td className="px-8 py-5 text-center">
+                                                <Badge variant={v.status === 'COMPLETED' ? 'success' : v.status === 'UNDER_REVIEW' ? 'warning' : 'neutral'} dot>
+                                                    {v.status}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-8 py-5 text-center">
+                                                <span className="text-[10px] font-black text-[#4285F4] tabular-nums">99.9%</span>
+                                            </td>
+                                            <td className="px-8 py-5 text-right">
+                                                <TactileButton variant="ghost" size="sm" className="text-[10px] uppercase font-black tracking-widest text-[#4285F4]">
+                                                    Log
+                                                </TactileButton>
+                                            </td>
+                                        </motion.tr>
+                                    );
+                                })
+                            ) : (
                                 <tr>
                                     <td colSpan={5} className="px-8 py-12">
                                         <EmptyState onAction={() => window.location.href = '/verification'} />
