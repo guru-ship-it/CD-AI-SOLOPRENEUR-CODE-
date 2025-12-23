@@ -14,7 +14,7 @@ export const TactileButton = ({
     ...props
 }: TactileButtonProps) => {
     const variants = {
-        primary: "bg-slate-900 text-white hover:bg-slate-800 shadow-lg shadow-slate-900/10",
+        primary: "bg-[#4285F4] text-white hover:bg-blue-600 shadow-lg shadow-blue-500/30",
         secondary: "bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-900/10",
         danger: "bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-900/10",
         ghost: "bg-transparent text-slate-600 hover:bg-slate-100",

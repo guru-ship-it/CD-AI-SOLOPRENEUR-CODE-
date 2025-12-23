@@ -3,6 +3,7 @@ import { doc, onSnapshot, collection, query, orderBy, limit } from 'firebase/fir
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../../firebase';
 import { GlassCard } from '../ui/GlassCard';
+import { Skeleton } from '../ui/Skeleton';
 import { CreditCard, History, AlertCircle, TrendingDown, TrendingUp } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { cn } from '../../utils/cn';
@@ -60,7 +61,7 @@ export const WalletCard: React.FC = () => {
         }
     };
 
-    if (loading) return <div className="animate-pulse h-64 bg-slate-900/5 rounded-3xl" />;
+    if (loading) return <Skeleton className="h-64 rounded-3xl" />;
 
     const isLowBalance = balance <= threshold;
 

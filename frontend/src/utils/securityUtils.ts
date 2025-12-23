@@ -33,7 +33,7 @@ export const maskPII = (text: string): string => {
 /**
  * Secure Logger wrapper that ensures PII is masked before logging.
  */
-export const secureLog = (message: string, data?: any) => {
+export const secureLog = (message: string, data?: unknown) => {
     const maskedMessage = maskPII(message);
     // Shallow mask of data object values if simple string
     const maskedData = data && typeof data === 'object'
@@ -52,7 +52,7 @@ export const secureLog = (message: string, data?: any) => {
 export const logAuditAction = (
     actionType: 'LOGIN' | 'VERIFY' | 'EXPORT' | 'CREATE_TENANT',
     userId: string,
-    details: any,
+    details: Record<string, unknown>,
     status: 'SUCCESS' | 'FAILURE' = 'SUCCESS'
 ) => {
     // Safe Console Log (Masked)

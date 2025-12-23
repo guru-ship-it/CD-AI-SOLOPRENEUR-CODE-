@@ -3,84 +3,77 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../firebase';
 import { GlassCard } from '../components/ui/GlassCard';
 import { TactileButton } from '../components/ui/TactileButton';
-import { ShieldCheck, User, FileText, Smartphone, Scan, ShieldAlert, Layers, Command, AlertCircle } from 'lucide-react';
+import { Scan, Command, AlertCircle, Layers } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { WalletWidget } from '../components/billing/WalletWidget';
+import { WalletCard } from '../components/billing/WalletCard';
 import { BulkUploader } from '../components/verification/BulkUploader';
 import VerificationGrid from '../components/verification/VerificationGrid';
+import { VERIFICATION_TYPES, VerificationType } from '../types/verification';
 import { cn } from '../utils/cn';
 
-const VERIFICATION_TYPES = [
-    { id: 'pan', name: 'PAN Verification', icon: <FileText className="w-5 h-5" />, fields: ['idNumber'] },
-    { id: 'aadhaar', name: 'Aadhaar XML', icon: <Fingerprint className="w-5 h-5" />, fields: ['idNumber'] },
-    { id: 'dl', name: 'Driving License', icon: <Smartphone className="w-5 h-5" />, fields: ['idNumber', 'dob'] },
-    { id: 'court', name: 'Court Record', icon: <ShieldAlert className="w-5 h-5" />, fields: ['name', 'fatherName', 'address'] },
-    { id: 'gst', name: 'GST Verification', icon: <Building2 className="w-5 h-5" />, fields: ['gstNumber'] },
-    { id: 'passport', name: 'Passport Verification', icon: <Plane className="w-5 h-5" />, fields: ['idNumber'] },
-    { id: 'DIGILOCKER', name: 'DigiLocker Connect', icon: <ShieldCheck className="w-5 h-5" />, fields: ['accessToken'] },
-    { id: 'SINGAPORE', name: 'Singapore NRIC', icon: <User className="w-5 h-5" />, fields: ['idNumber'] },
-    { id: 'VISION', name: 'Identity OCR', icon: <Scan className="w-5 h-5" />, fields: ['imageBase64'] },
-];
+interface VerificationResult {
+    isValid: boolean;
+    status: string;
+    error?: string;
+    legalName?: string;
+    verificationId?: string;
+    rawResponse?: Record<string, unknown>;
+}
 
 export const VerificationTerminal: React.FC = () => {
-    const [selectedType, setSelectedType] = useState<any>(null);
+    const [selectedType, setSelectedType] = useState<VerificationType | null>(null);
     const [mode, setMode] = useState<'SINGLE' | 'BULK'>('SINGLE');
-    const [inputs, setInputs] = useState<any>({});
+    const [inputs, setInputs] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<any>(null);
+    const [result, setResult] = useState<VerificationResult | null>(null);
 
     const handleVerify = async () => {
         setLoading(true);
         setResult(null);
 
         try {
-            const typeMapping: Record<string, string> = {
-                'pan': 'PAN',
-                'dl': 'DRIVING_LICENSE',
-                'court': 'CRIME_CHECK',
-                'gst': 'GST',
-                'aadhaar': 'DIGILOCKER',
-                'passport': 'PASSPORT'
-            };
-            const backendType = typeMapping[selectedType.id] || selectedType.id;
+            const backendType = selectedType?.backendType || selectedType?.id;
 
             const verifyFn = httpsCallable(functions, 'verifyDocument');
-            const response: any = await verifyFn({
+            const response = await verifyFn({
                 type: backendType,
                 inputs: inputs
             });
 
-            setResult(response.data);
-            if (response.data.isValid) {
+            const data = response.data as VerificationResult;
+            setResult(data);
+            if (data.isValid) {
                 toast.success('Identity Verified Successfully');
-            } else if (response.data.status === 'PENDING_BACKGROUND_CHECK') {
+            } else if (data.status === 'PENDING_BACKGROUND_CHECK') {
                 toast.info('Background Search Initiated');
             } else {
-                toast.error(response.data.error || 'Verification Failed');
+                toast.error(data.error || 'Verification Failed');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Verification Error:', error);
-            if (error.code === 'failed-precondition' || error.message?.includes('INSUFFICIENT_BALANCE')) {
+            const err = error as { code?: string; message?: string };
+            if (err.code === 'failed-precondition' || err.message?.includes('INSUFFICIENT_BALANCE')) {
                 toast.error('Insufficient Credits: Please top up your wallet to continue.');
             } else {
-                toast.error(error.message || 'System Error Connecting to Gateway');
+                toast.error(err.message || 'System Error Connecting to Gateway');
             }
         } finally {
             setLoading(false);
         }
     };
 
-    const handleBatchSubmit = async (requests: any[]) => {
+    const handleBatchSubmit = async (requests: Record<string, unknown>[]) => {
         setLoading(true);
         try {
             const batchFn = httpsCallable(functions, 'processBatch');
-            const response: any = await batchFn({
+            const response = await batchFn({
                 requests: requests
-            });
+            }) as { data: { batchId: string } };
             toast.success(`Batch execution ${response.data.batchId} initiated. Scanning ${requests.length} entities.`);
-        } catch (error: any) {
-            toast.error(error.message || 'Batch Submission Failed');
+        } catch (error: unknown) {
+            const err = error as Error;
+            toast.error(err.message || 'Batch Submission Failed');
         } finally {
             setLoading(false);
         }
@@ -91,16 +84,17 @@ export const VerificationTerminal: React.FC = () => {
         setLoading(true);
         try {
             const genFn = httpsCallable(functions, 'generateCertificate');
-            const response: any = await genFn({ verificationId });
+            const response = await genFn({ verificationId }) as { data: { downloadUrl: string } };
             if (response.data?.downloadUrl) {
                 window.open(response.data.downloadUrl, '_blank');
                 toast.success('Certificate Generated Successfully');
             } else {
                 throw new Error('No download URL returned');
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Download Error:', error);
-            toast.error(error.message || 'Failed to generate certificate');
+            const err = error as Error;
+            toast.error(err.message || 'Failed to generate certificate');
         } finally {
             setLoading(false);
         }
@@ -139,7 +133,7 @@ export const VerificationTerminal: React.FC = () => {
 
                 {mode === 'BULK' ? (
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                        <div className="lg:col-span-4"><WalletWidget /></div>
+                        <div className="lg:col-span-4"><WalletCard /></div>
                         <div className="lg:col-span-8"><BulkUploader onBatchSubmit={handleBatchSubmit} /></div>
                     </div>
                 ) : (
@@ -161,14 +155,14 @@ export const VerificationTerminal: React.FC = () => {
                         {selectedType && (mode === 'SINGLE') && (
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-fade-in">
                                 <div className="lg:col-span-4 space-y-8">
-                                    <WalletWidget />
+                                    <WalletCard />
 
                                     {/* Quick Switcher (Side) */}
                                     <GlassCard className="p-4 border-slate-200 bg-white">
                                         <div className="flex items-center justify-between mb-4">
                                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selected Type</span>
                                             <button
-                                                onClick={() => { (setSelectedType as any)(null); setResult(null); }}
+                                                onClick={() => { setSelectedType(null); setResult(null); }}
                                                 className="text-[10px] font-black text-[#4285F4] uppercase hover:underline"
                                             >
                                                 Change
@@ -176,7 +170,7 @@ export const VerificationTerminal: React.FC = () => {
                                         </div>
                                         <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-900">
                                             <div className="text-[#4285F4]">{selectedType.icon}</div>
-                                            <span className="font-bold text-sm tracking-tight">{selectedType.name}</span>
+                                            <span className="font-bold text-sm tracking-tight">{selectedType.label}</span>
                                         </div>
                                     </GlassCard>
                                 </div>
@@ -184,7 +178,7 @@ export const VerificationTerminal: React.FC = () => {
                                 <div className="lg:col-span-8 space-y-6">
                                     <GlassCard className="p-8 border-slate-100 bg-white shadow-sm">
                                         <h3 className="text-lg font-bold text-slate-900 tracking-tight mb-8">
-                                            {selectedType.name} Inputs
+                                            {selectedType.label} Inputs
                                         </h3>
 
                                         <div className="space-y-6">
@@ -193,7 +187,7 @@ export const VerificationTerminal: React.FC = () => {
                                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Document Number</label>
                                                     <input
                                                         type="text"
-                                                        placeholder={`Enter ${selectedType.name} Number`}
+                                                        placeholder={`Enter ${selectedType.label} Number`}
                                                         className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 transition-all placeholder:text-slate-400"
                                                         value={inputs.idNumber || ''}
                                                         onChange={(e) => setInputs({ ...inputs, idNumber: e.target.value })}
@@ -275,7 +269,7 @@ export const VerificationTerminal: React.FC = () => {
                                             {selectedType.fields.includes('imageBase64') && (
                                                 <div className="space-y-1.5 text-center p-8 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
                                                     <Scan className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                                                    <TactileButton variant="secondary" className="mx-auto bg-slate-900 text-white">
+                                                    <TactileButton variant="secondary" className="mx-auto bg-[#4285F4] text-white">
                                                         Upload ID Screenshot
                                                     </TactileButton>
                                                 </div>
@@ -337,7 +331,7 @@ export const VerificationTerminal: React.FC = () => {
                                                             <summary className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-[#4285F4] transition-colors list-none">
                                                                 View Forensic Audit Trail (Raw Response)
                                                             </summary>
-                                                            <pre className="mt-4 p-4 bg-slate-900 text-google-green text-[10px] font-mono rounded-xl overflow-x-auto shadow-inner border border-slate-800">
+                                                            <pre className="mt-4 p-4 bg-slate-50 text-slate-600 text-[10px] font-mono rounded-xl overflow-x-auto shadow-inner border border-slate-200">
                                                                 {JSON.stringify(result.rawResponse || result, null, 2)}
                                                             </pre>
                                                         </details>

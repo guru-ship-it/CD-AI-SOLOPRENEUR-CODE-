@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Building2, MoreHorizontal, CheckCircle2, Clock } from 'lucide-react';
+import { toast } from 'sonner';
 import { ValidatedInput } from '../components/ui/ValidatedInput';
 import { validateEmail, logAuditAction } from '../utils/securityUtils';
 
@@ -37,7 +38,7 @@ export const TenantManager = () => {
 
         // POPIA/NDPR Compliance Check
         if (!newCompany.dpoName || !newCompany.dpoEmail || !newCompany.dpoPhone) {
-            alert("Compliance Error: Information Officer (DPO) details are mandatory for this region.");
+            toast.error("Compliance Error: Information Officer (DPO) details are mandatory for this region.");
             return;
         }
 
@@ -62,7 +63,7 @@ export const TenantManager = () => {
                 compliance: 'POPIA_CHECKED'
             });
 
-            alert('Company Onboarded with DPO & Data Residency Pinned.');
+            toast.success('Company Onboarded with DPO & Data Residency Pinned.');
             setShowAddModal(false);
             setNewCompany({
                 name: '', email: '',
@@ -70,7 +71,7 @@ export const TenantManager = () => {
                 region: 'asia-south1'
             });
         } catch (e) {
-            alert("Failed to onboard tenant");
+            toast.error("Failed to onboard tenant");
         }
     };
 
@@ -122,60 +123,62 @@ export const TenantManager = () => {
 
             {/* Tenants Table */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <table className="w-full text-sm text-left">
-                    <thead className="bg-slate-50 text-gray-500 font-medium uppercase text-xs border-b border-gray-100">
-                        <tr>
-                            <th className="px-6 py-4">Company Name</th>
-                            <th className="px-6 py-4">Admin Email</th>
-                            <th className="px-6 py-4 text-center">Users</th>
-                            <th className="px-6 py-4">Status</th>
-                            <th className="px-6 py-4">Plan</th>
-                            <th className="px-6 py-4 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {MOCK_TENANTS.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase())).map((tenant) => (
-                            <tr key={tenant.id} className="hover:bg-slate-50/80 transition-colors group">
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700">
-                                            <Building2 className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <div className="font-bold text-slate-800">{tenant.name}</div>
-                                            <div className="text-xs text-gray-400">ID: CMP-00{tenant.id}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-gray-600 font-medium">{tenant.admin}</td>
-                                <td className="px-6 py-4 text-center">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
-                                        {tenant.users}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4">
-                                    {tenant.status === 'Active' ? (
-                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-100">
-                                            <CheckCircle2 className="w-3.5 h-3.5" /> Active
-                                        </span>
-                                    ) : (
-                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-100">
-                                            <Clock className="w-3.5 h-3.5" /> Pending
-                                        </span>
-                                    )}
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className="text-slate-600 font-semibold">{tenant.plan}</span>
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                    <button className="p-2 hover:bg-slate-200 rounded-lg transition-colors text-gray-400 hover:text-slate-700">
-                                        <MoreHorizontal className="w-5 h-5" />
-                                    </button>
-                                </td>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-slate-50 text-gray-500 font-medium uppercase text-xs border-b border-gray-100">
+                            <tr>
+                                <th className="px-6 py-4">Company Name</th>
+                                <th className="px-6 py-4">Admin Email</th>
+                                <th className="px-6 py-4 text-center">Users</th>
+                                <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4">Plan</th>
+                                <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {MOCK_TENANTS.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase())).map((tenant) => (
+                                <tr key={tenant.id} className="hover:bg-slate-50/80 transition-colors group">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700">
+                                                <Building2 className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-slate-800">{tenant.name}</div>
+                                                <div className="text-xs text-gray-400">ID: CMP-00{tenant.id}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-gray-600 font-medium">{tenant.admin}</td>
+                                    <td className="px-6 py-4 text-center">
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                                            {tenant.users}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        {tenant.status === 'Active' ? (
+                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-50 text-green-700 border border-green-100">
+                                                <CheckCircle2 className="w-3.5 h-3.5" /> Active
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-100">
+                                                <Clock className="w-3.5 h-3.5" /> Pending
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className="text-slate-600 font-semibold">{tenant.plan}</span>
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <button className="p-2 hover:bg-slate-200 rounded-lg transition-colors text-gray-400 hover:text-slate-700">
+                                            <MoreHorizontal className="w-5 h-5" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
                 {MOCK_TENANTS.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && (
                     <div className="p-8 text-center text-gray-500">
                         No companies found matching "{searchTerm}"

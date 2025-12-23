@@ -8,12 +8,15 @@ import { Badge } from '../components/ui/Badge';
 import { ApprovalWidget } from '../components/governance/ApprovalWidget';
 import { BreachTimer } from '../components/governance/BreachTimer';
 import { NitiMascot } from '../components/ui/NitiMascot';
+import { Skeleton } from '../components/ui/Skeleton';
+import { EmptyState } from '../components/ui/EmptyState';
 import { cn } from '../utils/cn';
 
 const API_URL = "http://localhost:8000";
 
 export const Dashboard = () => {
     const [verifications, setVerifications] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [approvals, setApprovals] = useState<any[]>([]);
     const [incidentActive, setIncidentActive] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -31,6 +34,8 @@ export const Dashboard = () => {
                 setIncidentActive(vData.some((v: any) => v.status === 'UNDER_REVIEW'));
             } catch (err) {
                 console.error("Dashboard fetch error", err);
+            } finally {
+                setLoading(false);
             }
         };
         fetchData();
@@ -172,7 +177,25 @@ export const Dashboard = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {verifications.length > 0 ? verifications.slice(0, 10).map((v, idx) => {
+                            {loading ? (
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <tr key={i}>
+                                        <td className="px-8 py-5"><Skeleton className="h-4 w-32" /></td>
+                                        <td className="px-8 py-5">
+                                            <div className="flex items-center gap-3">
+                                                <Skeleton className="w-8 h-8 rounded-lg" />
+                                                <div className="space-y-1">
+                                                    <Skeleton className="h-4 w-24" />
+                                                    <Skeleton className="h-3 w-16" />
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-5"><Skeleton className="h-6 w-20 mx-auto rounded-full" /></td>
+                                        <td className="px-8 py-5"><Skeleton className="h-4 w-12 mx-auto" /></td>
+                                        <td className="px-8 py-5"><Skeleton className="h-8 w-16 ml-auto" /></td>
+                                    </tr>
+                                ))
+                            ) : verifications.length > 0 ? (verifications.slice(0, 10).map((v, idx) => {
                                 // NRIC Masking Simulation for demonstration
                                 const isDemoUser = v.applicant_name === 'Arjun Kumar';
                                 const maskedID = isDemoUser ? "S****421G" : `ID-${v.task_id.toString().slice(-4)}`;
@@ -214,8 +237,8 @@ export const Dashboard = () => {
                                 )
                             }) : (
                                 <tr>
-                                    <td colSpan={5} className="px-8 py-12 text-center text-slate-400 italic text-sm">
-                                        System idling. Monitoring global telemetry...
+                                    <td colSpan={5} className="px-8 py-12">
+                                        <EmptyState onAction={() => window.location.href = '/verification'} />
                                     </td>
                                 </tr>
                             )}

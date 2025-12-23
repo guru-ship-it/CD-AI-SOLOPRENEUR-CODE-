@@ -4,12 +4,25 @@ import { functions } from '../../firebase';
 import { GlassCard } from '../ui/GlassCard';
 import { CreditCard, History, AlertCircle, TrendingDown, TrendingUp } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { Badge } from '../ui/Badge';
 import { cn } from '../../utils/cn';
 
+interface Transaction {
+    id: number;
+    amount: number;
+    type: 'DEBIT' | 'CREDIT';
+    description: string;
+    timestamp: string;
+}
+
+interface Wallet {
+    balance: number;
+    lowBalanceThreshold: number;
+    transactions: Transaction[];
+}
+
 export const WalletWidget: React.FC = () => {
-    const { user } = useAuth();
-    const [wallet, setWallet] = useState<any>(null);
+    const { } = useAuth();
+    const [wallet, setWallet] = useState<Wallet | null>(null);
     const [loading, setLoading] = useState(true);
 
     const fetchWallet = async () => {
@@ -37,23 +50,26 @@ export const WalletWidget: React.FC = () => {
         try {
             const topUpFn = httpsCallable(functions, 'topUpWallet');
             const amount = 5000;
-            const response: any = await topUpFn({ amount });
+            const response = await topUpFn({ amount }) as { data: { success: boolean; newBalance: number } };
 
             if (response.data.success) {
-                setWallet((prev: any) => ({
-                    ...prev,
-                    balance: response.data.newBalance,
-                    transactions: [
-                        {
-                            id: Date.now(),
-                            amount,
-                            type: 'CREDIT',
-                            description: 'Quick Top-up (Simulation)',
-                            timestamp: 'Just now'
-                        },
-                        ...prev.transactions
-                    ]
-                }));
+                setWallet((prev) => {
+                    if (!prev) return null;
+                    return {
+                        ...prev,
+                        balance: response.data.newBalance,
+                        transactions: [
+                            {
+                                id: Date.now(),
+                                amount,
+                                type: 'CREDIT',
+                                description: 'Quick Top-up (Simulation)',
+                                timestamp: 'Just now'
+                            },
+                            ...prev.transactions
+                        ]
+                    };
+                });
             }
         } catch (error) {
             console.error('Top-up failed:', error);
@@ -64,7 +80,7 @@ export const WalletWidget: React.FC = () => {
         fetchWallet();
     }, []);
 
-    if (loading) return <div className="animate-pulse h-48 bg-slate-100 rounded-3xl" />;
+    if (loading || !wallet) return <div className="animate-pulse h-48 bg-slate-100 rounded-3xl" />;
 
     const isLowBalance = wallet.balance <= wallet.lowBalanceThreshold;
 
@@ -108,7 +124,7 @@ export const WalletWidget: React.FC = () => {
                 </div>
 
                 <div className="space-y-3">
-                    {wallet.transactions.map((tx: any) => (
+                    {wallet.transactions.map((tx) => (
                         <div key={tx.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-900/5 transition-colors group">
                             <div className="flex items-center gap-3">
                                 <div className={cn(

@@ -110,7 +110,7 @@ export const AnalyticsDashboard: React.FC = () => {
                             </div>
                         ))}
                     </div>
-                    <button className="mt-4 w-full py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-800 transition-colors">
+                    <button className="mt-4 w-full py-2 bg-[#4285F4] text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 transition-colors">
                         Expand Map
                     </button>
                 </GlassCard>

@@ -1,28 +1,29 @@
 import React, { useState } from 'react';
 import Papa from 'papaparse';
-import { FileText, CheckCircle2, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import { FileText, Loader2, ArrowRight } from 'lucide-react';
 import { TactileButton } from '../ui/TactileButton';
 import { Dropzone } from './Dropzone';
 import { toast } from 'sonner';
-import { cn } from '../../utils/cn';
+
+interface BulkRow {
+    [key: string]: string;
+}
 
 interface BulkUploaderProps {
-    onBatchSubmit: (data: any[]) => Promise<void>;
+    onBatchSubmit: (data: Record<string, any>[]) => Promise<void>;
 }
 
 export const BulkUploader: React.FC<BulkUploaderProps> = ({ onBatchSubmit }) => {
-    const [preview, setPreview] = useState<any[]>([]);
+    const [preview, setPreview] = useState<BulkRow[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [rawFile, setRawFile] = useState<File | null>(null);
 
     const handleFileSelected = (file: File) => {
-        setRawFile(file);
         Papa.parse(file, {
             header: true,
             skipEmptyLines: true,
             complete: (results) => {
                 if (results.data.length > 0) {
-                    setPreview(results.data);
+                    setPreview(results.data as BulkRow[]);
                     toast.success(`Extracted ${results.data.length} records from ${file.name}`);
                 } else {
                     toast.error("CSV file is empty or invalid header structure.");
@@ -56,7 +57,6 @@ export const BulkUploader: React.FC<BulkUploaderProps> = ({ onBatchSubmit }) => 
         try {
             await onBatchSubmit(requests);
             setPreview([]);
-            setRawFile(null);
         } catch (error) {
             console.error(error);
         } finally {
@@ -82,7 +82,7 @@ export const BulkUploader: React.FC<BulkUploaderProps> = ({ onBatchSubmit }) => 
                             <TactileButton
                                 variant="secondary"
                                 size="sm"
-                                onClick={() => { setPreview([]); setRawFile(null); }}
+                                onClick={() => { setPreview([]); }}
                                 disabled={isProcessing}
                             >
                                 Discard
@@ -118,8 +118,8 @@ export const BulkUploader: React.FC<BulkUploaderProps> = ({ onBatchSubmit }) => 
                             <tbody>
                                 {preview.map((row, i) => (
                                     <tr key={i} className="group hover:bg-white/80 transition-all border-b border-slate-50/50">
-                                        {Object.values(row).map((val: any, j) => (
-                                            <td key={j} className="px-8 py-5 text-sm font-bold text-slate-600 tracking-tight group-hover:text-slate-900">{val}</td>
+                                        {Object.values(row).map((val, j) => (
+                                            <td key={j} className="px-8 py-5 text-sm font-bold text-slate-600 tracking-tight group-hover:text-slate-900">{String(val)}</td>
                                         ))}
                                     </tr>
                                 ))}

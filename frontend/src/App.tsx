@@ -19,7 +19,7 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 selection:bg-emerald-100 selection:text-emerald-900">
-      <Toaster position="top-right" expand={false} richColors closeButton />
+      <Toaster position="bottom-right" richColors />
       <WatermarkOverlay>
         <CookieConsent />
         <NitiMascot />
