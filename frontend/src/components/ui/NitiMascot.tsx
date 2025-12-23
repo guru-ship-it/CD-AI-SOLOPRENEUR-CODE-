@@ -30,10 +30,9 @@ export const NitiMascot: React.FC<NitiMascotProps> = ({ className, size = 'md' }
                 className="relative z-10"
             >
                 {/* The Head / Body */}
-                <div className="w-full h-full bg-[#0F172A] rounded-[2rem] border-2 border-white/5 shadow-2xl relative overflow-hidden flex items-center justify-center">
-
+                <div className="w-full h-full bg-white rounded-[2rem] border-2 border-slate-200 shadow-xl relative overflow-hidden flex items-center justify-center">
                     {/* Internal Glow */}
-                    <div className="absolute inset-0 bg-[#4285F4]/5 pulse-subtle" />
+                    <div className="absolute inset-0 bg-blue-50/50" />
 
                     {/* Glass Visor */}
                     <div className="absolute top-1/4 left-1/4 right-1/4 h-1/3 bg-white/5 backdrop-blur-md rounded-lg border border-white/10 overflow-hidden">
@@ -46,7 +45,7 @@ export const NitiMascot: React.FC<NitiMascotProps> = ({ className, size = 'md' }
                                 repeat: Infinity,
                                 ease: "linear"
                             }}
-                            className="w-1/2 h-full bg-[#4285F4]/20 blur-sm"
+                            className="w-1/2 h-full bg-[#4285F4]/10 blur-sm"
                         />
 
                         {/* Visor Eyes/Scan Line */}
@@ -56,28 +55,28 @@ export const NitiMascot: React.FC<NitiMascotProps> = ({ className, size = 'md' }
                         </div>
                     </div>
 
-                    <Bot className="w-1/2 h-1/2 text-slate-400 opacity-20" />
+                    <Bot className="w-1/2 h-1/2 text-slate-200" />
                 </div>
 
                 {/* Floating Shadow */}
                 <motion.div
                     animate={{
                         scale: [1, 0.8, 1],
-                        opacity: [0.2, 0.1, 0.2]
+                        opacity: [0.1, 0.05, 0.1]
                     }}
                     transition={{
                         duration: 3,
                         repeat: Infinity,
                         ease: "easeInOut"
                     }}
-                    className="absolute -bottom-4 left-1/4 right-1/4 h-2 bg-slate-900 rounded-full blur-md"
+                    className="absolute -bottom-4 left-1/4 right-1/4 h-2 bg-slate-400 rounded-full blur-md"
                 />
             </motion.div>
 
             {/* Hover Tooltip */}
-            <div className="absolute -top-12 left-1/2 -translateX-1/2 bg-[#0F172A] border border-white/10 px-3 py-1.5 rounded-xl shadow-xl opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all pointer-events-none whitespace-nowrap">
-                <p className="text-[10px] font-black text-white uppercase tracking-widest leading-none">Hi, I'm Niti</p>
-                <div className="absolute -bottom-1 left-1/2 -translateX-1/2 w-2 h-2 bg-[#0F172A] border-b border-r border-white/10 rotate-45" />
+            <div className="absolute -top-12 left-1/2 -translateX-1/2 bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-xl opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all pointer-events-none whitespace-nowrap z-50">
+                <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest leading-none">Hi, I'm Niti</p>
+                <div className="absolute -bottom-1 left-1/2 -translateX-1/2 w-2 h-2 bg-white border-b border-r border-slate-200 rotate-45" />
             </div>
         </div>
     );

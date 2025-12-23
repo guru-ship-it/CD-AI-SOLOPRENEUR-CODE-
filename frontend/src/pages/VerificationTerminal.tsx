@@ -12,16 +12,19 @@ import VerificationGrid from '../components/verification/VerificationGrid';
 import { cn } from '../utils/cn';
 
 const VERIFICATION_TYPES = [
-    { id: 'PAN', name: 'PAN Verification', icon: <FileText className="w-5 h-5" />, fields: ['idNumber'] },
-    { id: 'DRIVING_LICENSE', name: 'Driving License', icon: <Smartphone className="w-5 h-5" />, fields: ['idNumber', 'dob'] },
+    { id: 'pan', name: 'PAN Verification', icon: <FileText className="w-5 h-5" />, fields: ['idNumber'] },
+    { id: 'aadhaar', name: 'Aadhaar XML', icon: <Fingerprint className="w-5 h-5" />, fields: ['idNumber'] },
+    { id: 'dl', name: 'Driving License', icon: <Smartphone className="w-5 h-5" />, fields: ['idNumber', 'dob'] },
+    { id: 'court', name: 'Court Record', icon: <ShieldAlert className="w-5 h-5" />, fields: ['name', 'fatherName', 'address'] },
+    { id: 'gst', name: 'GST Verification', icon: <Building2 className="w-5 h-5" />, fields: ['gstNumber'] },
+    { id: 'passport', name: 'Passport Verification', icon: <Plane className="w-5 h-5" />, fields: ['idNumber'] },
     { id: 'DIGILOCKER', name: 'DigiLocker Connect', icon: <ShieldCheck className="w-5 h-5" />, fields: ['accessToken'] },
     { id: 'SINGAPORE', name: 'Singapore NRIC', icon: <User className="w-5 h-5" />, fields: ['idNumber'] },
     { id: 'VISION', name: 'Identity OCR', icon: <Scan className="w-5 h-5" />, fields: ['imageBase64'] },
-    { id: 'CRIME_CHECK', name: 'Police Verification', icon: <ShieldAlert className="w-5 h-5" />, fields: ['name', 'fatherName', 'address'] },
 ];
 
 export const VerificationTerminal: React.FC = () => {
-    const [selectedType, setSelectedType] = useState(VERIFICATION_TYPES[0]);
+    const [selectedType, setSelectedType] = useState<any>(null);
     const [mode, setMode] = useState<'SINGLE' | 'BULK'>('SINGLE');
     const [inputs, setInputs] = useState<any>({});
     const [loading, setLoading] = useState(false);
@@ -32,9 +35,19 @@ export const VerificationTerminal: React.FC = () => {
         setResult(null);
 
         try {
+            const typeMapping: Record<string, string> = {
+                'pan': 'PAN',
+                'dl': 'DRIVING_LICENSE',
+                'court': 'CRIME_CHECK',
+                'gst': 'GST',
+                'aadhaar': 'DIGILOCKER',
+                'passport': 'PASSPORT'
+            };
+            const backendType = typeMapping[selectedType.id] || selectedType.id;
+
             const verifyFn = httpsCallable(functions, 'verifyDocument');
             const response: any = await verifyFn({
-                type: selectedType.id,
+                type: backendType,
                 inputs: inputs
             });
 
@@ -97,18 +110,18 @@ export const VerificationTerminal: React.FC = () => {
         <div className="max-w-6xl mx-auto space-y-8 pb-12">
             <div className="flex flex-col gap-2">
                 <p className="text-[10px] font-black text-[#4285F4] uppercase tracking-[0.2em]">Verified Sovereign Gateway</p>
-                <h1 className="text-4xl font-black text-white tracking-tight uppercase leading-none">Unified Identity Terminal</h1>
-                <p className="text-slate-400 font-medium tracking-tight">One Endpoint. Twenty-Five Jurisdictions. Zero Friction.</p>
+                <h1 className="text-4xl font-bold text-slate-900 tracking-tight leading-none">Unified Identity Terminal</h1>
+                <p className="text-slate-500 font-medium tracking-tight">One Endpoint. Twenty-Five Jurisdictions. Zero Friction.</p>
             </div>
 
             <div className="space-y-8">
                 {/* Mode Selector */}
-                <div className="flex p-1.5 bg-[#1E293B]/60 backdrop-blur-md border border-white/5 rounded-2xl gap-1 w-fit">
+                <div className="flex p-1 bg-slate-100/50 border border-slate-200 rounded-2xl gap-1 w-fit">
                     <button
                         onClick={() => { setMode('SINGLE'); setResult(null); }}
                         className={cn(
                             "py-2 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                            mode === 'SINGLE' ? "bg-[#4285F4] text-white shadow-lg shadow-blue-500/20" : "text-slate-400 hover:text-white"
+                            mode === 'SINGLE' ? "bg-white text-slate-900 shadow-sm border border-slate-200" : "text-slate-500 hover:text-slate-900"
                         )}
                     >
                         <Command className="w-3 h-3 inline-block mr-1.5 mb-0.5" /> Single Check
@@ -117,7 +130,7 @@ export const VerificationTerminal: React.FC = () => {
                         onClick={() => { setMode('BULK'); setResult(null); }}
                         className={cn(
                             "py-2 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                            mode === 'BULK' ? "bg-[#4285F4] text-white shadow-lg shadow-blue-500/20" : "text-slate-400 hover:text-white"
+                            mode === 'BULK' ? "bg-white text-slate-900 shadow-sm border border-slate-200" : "text-slate-500 hover:text-slate-900"
                         )}
                     >
                         <Layers className="w-3 h-3 inline-block mr-1.5 mb-0.5" /> Bulk (CSV)
@@ -151,9 +164,9 @@ export const VerificationTerminal: React.FC = () => {
                                     <WalletWidget />
 
                                     {/* Quick Switcher (Side) */}
-                                    <GlassCard className="p-4 border-white/5 bg-[#1E293B]/40">
+                                    <GlassCard className="p-4 border-slate-200 bg-white">
                                         <div className="flex items-center justify-between mb-4">
-                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Selected Type</span>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selected Type</span>
                                             <button
                                                 onClick={() => { (setSelectedType as any)(null); setResult(null); }}
                                                 className="text-[10px] font-black text-[#4285F4] uppercase hover:underline"
@@ -161,40 +174,53 @@ export const VerificationTerminal: React.FC = () => {
                                                 Change
                                             </button>
                                         </div>
-                                        <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/5 text-white">
+                                        <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-900">
                                             <div className="text-[#4285F4]">{selectedType.icon}</div>
-                                            <span className="font-black text-sm">{selectedType.name}</span>
+                                            <span className="font-bold text-sm tracking-tight">{selectedType.name}</span>
                                         </div>
                                     </GlassCard>
                                 </div>
 
                                 <div className="lg:col-span-8 space-y-6">
-                                    <GlassCard className="p-8 border-white/5 bg-[#1E293B]/60 shadow-2xl">
-                                        <h3 className="text-lg font-black text-white uppercase tracking-tight mb-6 flex items-center gap-2">
-                                            {selectedType.icon} {selectedType.name} Inputs
+                                    <GlassCard className="p-8 border-slate-100 bg-white shadow-sm">
+                                        <h3 className="text-lg font-bold text-slate-900 tracking-tight mb-8">
+                                            {selectedType.name} Inputs
                                         </h3>
 
-                                        <div className="space-y-4">
+                                        <div className="space-y-6">
                                             {selectedType.fields.includes('idNumber') && (
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Document Number</label>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Document Number</label>
                                                     <input
                                                         type="text"
                                                         placeholder={`Enter ${selectedType.name} Number`}
-                                                        className="w-full bg-[#0F172A]/80 border border-white/5 rounded-xl p-4 text-sm font-bold tracking-tight text-white outline-none focus:ring-4 focus:ring-[#4285F4]/10 transition-all placeholder:text-slate-600"
+                                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 transition-all placeholder:text-slate-400"
                                                         value={inputs.idNumber || ''}
                                                         onChange={(e) => setInputs({ ...inputs, idNumber: e.target.value })}
                                                     />
                                                 </div>
                                             )}
 
+                                            {selectedType.fields.includes('gstNumber') && (
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">GST Number</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Enter GSTIN Number"
+                                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 transition-all placeholder:text-slate-400"
+                                                        value={inputs.gstNumber || ''}
+                                                        onChange={(e) => setInputs({ ...inputs, gstNumber: e.target.value })}
+                                                    />
+                                                </div>
+                                            )}
+
                                             {selectedType.fields.includes('dob') && (
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Date of Birth (DD-MM-YYYY)</label>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Date of Birth (DD-MM-YYYY)</label>
                                                     <input
                                                         type="text"
                                                         placeholder="15-08-1947"
-                                                        className="w-full bg-[#0F172A]/80 border border-white/5 rounded-xl p-4 text-sm font-bold tracking-tight text-white outline-none focus:ring-4 focus:ring-[#4285F4]/10 transition-all placeholder:text-slate-600"
+                                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 transition-all placeholder:text-slate-400"
                                                         value={inputs.dob || ''}
                                                         onChange={(e) => setInputs({ ...inputs, dob: e.target.value })}
                                                     />
@@ -203,11 +229,11 @@ export const VerificationTerminal: React.FC = () => {
 
                                             {/* ... (reusing the rest of the inputs with the same white text / dark bg patterns) */}
                                             {selectedType.fields.includes('name') && (
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Legal Name</label>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Full Legal Name</label>
                                                     <input
                                                         type="text"
-                                                        className="w-full bg-[#0F172A]/80 border border-white/5 rounded-xl p-4 text-sm font-bold tracking-tight text-white outline-none focus:ring-4 focus:ring-[#4285F4]/10 transition-all"
+                                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 transition-all"
                                                         value={inputs.name || ''}
                                                         onChange={(e) => setInputs({ ...inputs, name: e.target.value })}
                                                     />
@@ -215,11 +241,11 @@ export const VerificationTerminal: React.FC = () => {
                                             )}
 
                                             {selectedType.fields.includes('fatherName') && (
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Father's Name</label>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Father's Name</label>
                                                     <input
                                                         type="text"
-                                                        className="w-full bg-[#0F172A]/80 border border-white/5 rounded-xl p-4 text-sm font-bold tracking-tight text-white outline-none focus:ring-4 focus:ring-[#4285F4]/10 transition-all"
+                                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 transition-all"
                                                         value={inputs.fatherName || ''}
                                                         onChange={(e) => setInputs({ ...inputs, fatherName: e.target.value })}
                                                     />
@@ -227,11 +253,11 @@ export const VerificationTerminal: React.FC = () => {
                                             )}
 
                                             {selectedType.fields.includes('address') && (
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Address</label>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Current Address</label>
                                                     <textarea
                                                         rows={2}
-                                                        className="w-full bg-[#0F172A]/80 border border-white/5 rounded-xl p-4 text-sm font-bold tracking-tight text-white outline-none focus:ring-4 focus:ring-[#4285F4]/10 transition-all"
+                                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-bold text-slate-900 outline-none focus:ring-4 focus:ring-blue-100 transition-all"
                                                         value={inputs.address || ''}
                                                         onChange={(e) => setInputs({ ...inputs, address: e.target.value })}
                                                     />
@@ -239,17 +265,17 @@ export const VerificationTerminal: React.FC = () => {
                                             )}
 
                                             {selectedType.fields.includes('accessToken') && (
-                                                <div className="space-y-1.5 text-center p-8 border-2 border-dashed border-white/5 rounded-3xl">
-                                                    <TactileButton variant="primary" className="mx-auto bg-[#4285F4] hover:bg-blue-600" onClick={() => toast.success("OAuth Connector Active")}>
+                                                <div className="space-y-1.5 text-center p-8 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
+                                                    <TactileButton variant="primary" className="mx-auto bg-[#4285F4]" onClick={() => toast.success("OAuth Connector Active")}>
                                                         Open DigiLocker OAuth
                                                     </TactileButton>
                                                 </div>
                                             )}
 
                                             {selectedType.fields.includes('imageBase64') && (
-                                                <div className="space-y-1.5 text-center p-8 border-2 border-dashed border-white/5 rounded-3xl">
-                                                    <Scan className="w-12 h-12 text-slate-700 mx-auto mb-4" />
-                                                    <TactileButton variant="secondary" className="mx-auto border-white/10 text-white">
+                                                <div className="space-y-1.5 text-center p-8 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
+                                                    <Scan className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                                                    <TactileButton variant="secondary" className="mx-auto bg-slate-900 text-white">
                                                         Upload ID Screenshot
                                                     </TactileButton>
                                                 </div>
@@ -276,13 +302,13 @@ export const VerificationTerminal: React.FC = () => {
                                                 exit={{ opacity: 0, y: 20 }}
                                             >
                                                 <GlassCard className={cn(
-                                                    "p-6 border-l-8 transition-all bg-[#1E293B]/80",
+                                                    "p-6 border-l-8 transition-all bg-white shadow-xl shadow-slate-200/50 mt-6",
                                                     result.isValid ? "border-[#34A853]" : "border-[#EA4335]"
                                                 )}>
                                                     <div className="flex justify-between items-start">
                                                         <div>
                                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Normalized Result</p>
-                                                            <h4 className="text-xl font-black text-white tracking-tight leading-none uppercase">
+                                                            <h4 className="text-xl font-bold text-slate-900 tracking-tight leading-none">
                                                                 {result.legalName || 'Unknown Identity'}
                                                             </h4>
                                                             {result.rawResponse?.jobId && (
@@ -306,12 +332,12 @@ export const VerificationTerminal: React.FC = () => {
                                                         </div>
                                                     )}
 
-                                                    <div className="mt-6 pt-4 border-t border-white/5 flex justify-between items-center">
+                                                    <div className="mt-8 pt-6 border-t border-slate-100 flex justify-between items-center">
                                                         <details className="cursor-pointer group outline-none flex-1">
-                                                            <summary className="text-[10px] font-black text-slate-500 uppercase tracking-widest group-hover:text-[#4285F4] transition-colors list-none">
+                                                            <summary className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:text-[#4285F4] transition-colors list-none">
                                                                 View Forensic Audit Trail (Raw Response)
                                                             </summary>
-                                                            <pre className="mt-4 p-4 bg-[#0F172A] text-[#34A853] text-[10px] font-mono rounded-xl overflow-x-auto shadow-inner border border-white/5">
+                                                            <pre className="mt-4 p-4 bg-slate-900 text-google-green text-[10px] font-mono rounded-xl overflow-x-auto shadow-inner border border-slate-800">
                                                                 {JSON.stringify(result.rawResponse || result, null, 2)}
                                                             </pre>
                                                         </details>

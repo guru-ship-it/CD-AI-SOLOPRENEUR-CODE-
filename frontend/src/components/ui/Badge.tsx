@@ -13,7 +13,7 @@ export const Badge = ({ children, variant = 'neutral', className, dot = false }:
         warning: "bg-[#FBBC05]/10 text-[#FBBC05] border-[#FBBC05]/20",
         danger: "bg-[#EA4335]/10 text-[#EA4335] border-[#EA4335]/20",
         info: "bg-[#4285F4]/10 text-[#4285F4] border-[#4285F4]/20",
-        neutral: "bg-slate-500/10 text-slate-400 border-white/5"
+        neutral: "bg-slate-100 text-slate-500 border-slate-200"
     };
 
     const dotColors = {

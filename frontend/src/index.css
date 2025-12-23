@@ -18,14 +18,14 @@
         animation: fadeIn 0.8s ease-out forwards;
     }
 
-    /* 1. The Glass Panel (Dark Theme Standard) */
+    /* 1. The Glass Panel (Light Enterprise Standard) */
     .glass-panel {
-        @apply bg-[#1E293B]/70 backdrop-blur-xl border border-white/5 shadow-xl rounded-2xl;
+        @apply bg-white border border-slate-200 shadow-sm rounded-2xl;
     }
 
     /* 2. The "Active" Glass (Google Blue) */
     .glass-active {
-        @apply bg-[#4285F4]/10 text-[#4285F4] border border-[#4285F4]/20 font-bold;
+        @apply bg-[#4285F4]/5 text-[#4285F4] border border-[#4285F4]/20 font-bold;
     }
 
     /* 3. Google Branding Colors */

@@ -66,28 +66,28 @@ export const WalletCard: React.FC = () => {
 
     return (
         <GlassCard className={cn(
-            "p-6 transition-all border-white/5",
-            isLowBalance ? "bg-[#EA4335]/10 border-[#EA4335]/30" : "bg-[#1E293B]/60 shadow-2xl"
+            "p-6 transition-all border-slate-200 bg-white shadow-sm",
+            isLowBalance && "bg-red-50 border-red-200"
         )}>
             <div className="flex justify-between items-start mb-6">
                 <div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Prepaid Wallet</p>
-                    <h3 className="text-4xl font-black text-white tracking-tighter">
+                    <h3 className="text-4xl font-black text-slate-900 tracking-tighter">
                         ₹ {balance.toLocaleString('en-IN')}
                     </h3>
                 </div>
                 <div className={cn(
                     "p-3 rounded-2xl",
-                    isLowBalance ? "bg-[#EA4335]/20 text-[#EA4335]" : "bg-[#4285F4]/20 text-[#4285F4]"
+                    isLowBalance ? "bg-red-100 text-[#EA4335]" : "bg-blue-50 text-[#4285F4]"
                 )}>
                     <CreditCard className="w-6 h-6" />
                 </div>
             </div>
 
             {isLowBalance && (
-                <div className="mb-6 p-4 bg-[#EA4335] text-white rounded-2xl flex items-center gap-3 animate-pulse shadow-lg shadow-red-500/20">
+                <div className="mb-6 p-4 bg-[#EA4335] text-white rounded-2xl flex items-center gap-3 shadow-lg shadow-red-200">
                     <AlertCircle className="w-5 h-5" />
-                    <p className="text-xs font-black uppercase tracking-tight">
+                    <p className="text-xs font-bold uppercase tracking-tight">
                         Critical: Low Balance. Top up to avoid service interruption.
                     </p>
                 </div>
@@ -103,17 +103,17 @@ export const WalletCard: React.FC = () => {
                 <div className="space-y-2">
                     {transactions.length > 0 ? (
                         transactions.map((tx) => (
-                            <div key={tx.id} className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-all group">
+                            <div key={tx.id} className="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 transition-all group border border-transparent hover:border-slate-100">
                                 <div className="flex items-center gap-3">
                                     <div className={cn(
                                         "p-2 rounded-xl",
-                                        tx.type === 'DEBIT' ? "bg-white/5 text-slate-500" : "bg-[#4285F4]/10 text-[#4285F4]"
+                                        tx.type === 'DEBIT' ? "bg-slate-100 text-slate-500" : "bg-blue-50 text-[#4285F4]"
                                     )}>
                                         {tx.type === 'DEBIT' ? <TrendingDown className="w-3.5 h-3.5" /> : <TrendingUp className="w-3.5 h-3.5" />}
                                     </div>
                                     <div>
-                                        <p className="text-[11px] font-black text-white leading-none">{tx.description}</p>
-                                        <p className="text-[9px] font-bold text-slate-500 mt-1">{tx.timestamp}</p>
+                                        <p className="text-[11px] font-bold text-slate-900 leading-none">{tx.description}</p>
+                                        <p className="text-[9px] font-medium text-slate-500 mt-1">{tx.timestamp}</p>
                                     </div>
                                 </div>
                                 <span className={cn(

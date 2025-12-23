@@ -19,7 +19,7 @@ export const Logo = ({ className = "h-10", showText = true }: { className?: stri
         {showText && (
             <div className="flex flex-col justify-center">
                 <div className="flex items-baseline leading-none">
-                    <span className="font-bold text-xl tracking-tight text-white">
+                    <span className="font-bold text-xl tracking-tight text-slate-800">
                         Compliance<span className="text-[#4285F4]">Desk</span><span className="text-[#34A853]">.ai</span>
                     </span>
                 </div>
