@@ -648,6 +648,23 @@ async def smart_parse_ocr(request: ParseRequest, db: AsyncSession = Depends(get_
     return result
 
 
+class TranslateRequest(BaseModel):
+    text: str
+    source_hint: str = "Auto-Detect"
+    target_language: str = "English"
+
+@app.post("/tools/translate")
+async def translate_content(request: TranslateRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Translates text to/from Indian Regional Languages.
+    """
+    from services.translation_service import TranslationService
+    
+    result = TranslationService.translate_text(request.text, request.source_hint, request.target_language)
+    return result
+
+
+
 
 @app.get("/")
 async def root():
