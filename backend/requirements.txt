@@ -20,3 +20,9 @@ pytest
 bandit
 playwright
 opencv-python-headless
+
+firebase-functions
+firebase-admin
+a2wsgi
+google-cloud-videointelligence
+aiosqlite

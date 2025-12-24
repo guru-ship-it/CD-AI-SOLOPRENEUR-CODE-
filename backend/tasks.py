@@ -1,6 +1,6 @@
 import time
 import random
-from .celery_config import celery_app
+from celery_config import celery_app
 
 @celery_app.task
 def generate_legal_pdf(applicant_data: dict):
