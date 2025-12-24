@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, CheckConstraint
 from sqlalchemy.sql import func
-from database import Base
+from database import Base, BaseCompliance
 
 class Verification(Base):
     __tablename__ = "verifications"
@@ -11,6 +11,12 @@ class Verification(Base):
     
     # FAT 5.1: Vault Isolation - No naked PII in verifications table
     vault_token = Column(String, unique=True, index=True, nullable=False) 
+    
+    # Dashboard Display Fields (Masked/Redacted in Prod, Plain for Demo)
+    applicant_name = Column(String, nullable=True) 
+    applicant_id = Column(String, nullable=True)
+    image_url = Column(String, nullable=True)
+ 
     
     status = Column(String, default="PENDING") # PENDING, PROCESSING, COMPLETED, FAILED, UNDER_REVIEW
     
@@ -93,3 +99,32 @@ class Vault(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
+from database import Base, BaseCompliance
+
+# ... existing operational models using Base ...
+
+class AuditLog(BaseCompliance):
+    __tablename__ = "audit_logs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    actor_id = Column(String, nullable=False, index=True) # User ID or System
+    action = Column(String, nullable=False) # READ, WRITE, EXPORT, DELETE
+    resource_id = Column(String, nullable=True) # ID of the resource accessed
+    ip_address = Column(String, nullable=True)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # 5-Year Retention Policy
+    retention_until = Column(DateTime(timezone=True), index=True) 
+
+class DPDPConsent(BaseCompliance):
+    __tablename__ = "dpdp_consents"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, nullable=False, index=True)
+    form_hash = Column(String, nullable=False) # Checksum of the agreed terms
+    signature_base64 = Column(String, nullable=False) # Digital Signature representation
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    ip_address = Column(String, nullable=True)
+    
+    # 5-Year Retention Policy
+    retention_until = Column(DateTime(timezone=True), index=True)

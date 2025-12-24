@@ -12,7 +12,7 @@ import { Skeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 // import { cn } from '../utils/cn';
 
-const API_URL = "http://localhost:8000";
+const API_URL = "/api";
 
 export const Dashboard = () => {
     const [verifications, setVerifications] = useState<any[]>([]);

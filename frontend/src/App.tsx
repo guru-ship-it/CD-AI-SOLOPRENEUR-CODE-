@@ -11,7 +11,7 @@ import { DashboardLayout } from './layouts/DashboardLayout';
 import { useSessionTimeout } from './hooks/useSessionTimeout';
 import { CookieConsent } from './components/ui/CookieConsent';
 import { WatermarkOverlay } from './components/security/WatermarkOverlay';
-import { NitiMascot } from './components/ai/NitiMascot';
+import { NitiChatWidget } from './components/ui/NitiChatWidget';
 import { Toaster } from 'sonner';
 
 const AppContent = () => {
@@ -22,7 +22,7 @@ const AppContent = () => {
       <Toaster position="bottom-right" richColors />
       <WatermarkOverlay>
         <CookieConsent />
-        <NitiMascot />
+        <NitiChatWidget />
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />

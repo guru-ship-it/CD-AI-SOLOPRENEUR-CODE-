@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 65" fill="none">
+  <!-- 
+     Balanced Shield Icon 
+     ViewBox widened to 500x65 to absolutely guarantee no overlap/cutoff.
+     Text color: #475569 (Steel Grey)
+  -->
+  
+  <g transform="translate(5, 7.5)">
+      <!-- Left Half (Blue) -->
+      <path d="M25 5C25 5 5 15 5 30C5 40 12 50 25 55V5Z" fill="#E8F0FE" stroke="#4285F4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Right Half (Green) -->
+      <path d="M25 5C25 5 45 15 45 30C45 40 38 50 25 55V5Z" fill="#E6F4EA" stroke="#34A853" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+      <!-- Tick Mark -->
+      <path d="M15 30L22 37L35 20" stroke="#FBBC05" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M35 20L28 29" stroke="#EA4335" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Text: ComplianceDesk.ai -->
+  <!-- Increased separation: ComplianceDesk ends approx x=300. Moved .ai to 320. -->
+  <text x="65" y="45" font-family="'Inter', Arial, sans-serif" font-weight="800" font-size="28" fill="#475569">ComplianceDesk</text>
+  <text x="320" y="45" font-family="'Inter', Arial, sans-serif" font-weight="800" font-size="28" fill="#10b981">.ai</text>
+</svg>

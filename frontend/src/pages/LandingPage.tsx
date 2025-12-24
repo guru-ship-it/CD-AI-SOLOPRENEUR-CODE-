@@ -17,8 +17,8 @@ export const LandingPage = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    const openWhatsApp = () => {
-        window.open('https://wa.me/918125991247?text=Hi%20ComplianceDesk,%20I%20want%20to%20verify%20my%20workforce.', '_blank');
+    const openNitiWidget = () => {
+        window.dispatchEvent(new Event('open-niti-widget'));
     };
 
     return (
@@ -69,11 +69,11 @@ export const LandingPage = () => {
                         <div className="hidden md:flex items-center gap-4 pr-2">
                             <Link to="/login" className="text-sm font-semibold text-slate-600 hover:text-[#4285F4] transition-colors">Login</Link>
                             <button
-                                onClick={openWhatsApp}
+                                onClick={openNitiWidget}
                                 className="bg-[#34A853] hover:bg-[#2e964a] text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-all shadow-lg shadow-green-900/20 flex items-center gap-2"
                             >
                                 <Smartphone className="w-4 h-4" />
-                                Book Demo
+                                Ask Niti AI
                             </button>
                         </div>
 
@@ -113,11 +113,11 @@ export const LandingPage = () => {
                         </button>
 
                         <button
-                            onClick={openWhatsApp}
+                            onClick={openNitiWidget}
                             className="w-full md:w-auto px-8 py-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-900 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
                         >
                             <MessageCircle className="w-5 h-5 text-[#25D366]" />
-                            WhatsApp Niti
+                            Ask Niti AI
                         </button>
                     </div>
 

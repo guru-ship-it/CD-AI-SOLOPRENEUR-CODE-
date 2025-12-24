@@ -12,15 +12,25 @@ from pydantic import BaseModel
 # from services.pvc_application import PVCApplicationEngine
 # from services.pvc_status_checker import PVCStatusChecker
 # from verifiers.pvc_validator import PVCValidator
-from database import get_db
-from models import Verification, Grievance, Tenant, Incident, ActionApproval
+from database import get_db, get_compliance_db
+from models import Verification, Grievance, Tenant, Incident, ActionApproval, AuditLog, DPDPConsent
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import desc, select
-from fastapi import Depends
+from fastapi import Depends, Header
 from datetime import datetime, timedelta
 from typing import List, Optional
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="ComplianceDesk API (Async)")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Allow Firebase Hosting & Localhost
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Lazy Loading Proxy to prevent Timeout during Discovery
 class LazyProxy:
@@ -140,15 +150,36 @@ async def request_verification(request: VerificationRequest, db: AsyncSession = 
     task_id = str(uuid.uuid4())
     
     # Save Initial State to DB
+    # save Initial State to DB
+    # Generate Vault Token (Since Models enforce Vault Isolation)
+    vault_token = f"VT-{uuid.uuid4().hex[:12].upper()}"
+
     verification = Verification(
         task_id=task_id,
         tenant_id=tenant_id,
-        applicant_name=request.name,
-        applicant_id=final_id, # Stored Masked if SG
-        image_url=request.image_url,
+        applicant_name=request.name, # RESTORED: Model updated to support this
+        applicant_id=final_id,       # RESTORED
+        image_url=request.image_url, # RESTORED
+        vault_token=vault_token,    
         status="PROCESSING"
     )
     db.add(verification)
+    await db.commit()
+
+    # --- TRUTH SOURCE INTEGRATION (MOCK PHASE 1) ---
+    from services.mock_provider_service import MockProviderService
+    
+    # Simulate Calling Protean/NSDL
+    truth_resp = MockProviderService.verify_id("AADHAAR", request.id)
+    
+    if truth_resp["status"] == "SUCCESS":
+        verification.status = "COMPLETED"
+        verification.face_verified = True # Simulated Face Match
+        verification.face_confidence = "98.5"
+    else:
+        verification.status = "FAILED"
+        verification.failure_reason = truth_resp.get("message", "Identity Verification Failed")
+    
     await db.commit()
 
     # 1. Trigger PDF Generation (CPU Heavy)
@@ -163,7 +194,8 @@ async def request_verification(request: VerificationRequest, db: AsyncSession = 
         "message": "Verification processing started",
         "task_id": task_id,
         "pdf_task_id": pdf_task.id,
-        "face_task_id": face_task.id
+        "face_task_id": face_task.id,
+        "truth_source_status": truth_resp["status"]
     }
 
 @app.post("/whatsapp/hook")
@@ -361,25 +393,26 @@ async def report_incident(request: IncidentRequest, db: AsyncSession = Depends(g
     """
     Report a security incident (72-hour timer).
     """
-    deadline = datetime.now() + timedelta(hours=72)
+    deadline = datetime.now() + timedelta(hours=6)
     
     incident = Incident(
         description=request.description,
         report_deadline=deadline,
-        status="OPEN"
+        status="PENDING_INTERNAL_REVIEW" # Human Guardrails - NO AUTO REPORTING
     )
     db.add(incident)
     await db.commit()
     
-    # Simulate Regulator Email
-    print(f"🚨 SECURITY INCIDENT DECLARED: {request.description}")
-    print(f"📧 Drafting email to Data Protection Regulator...")
-    print(f"⏱️ 72-Hour Countown Started. Deadline: {deadline}")
+    # Simulate INTERNAL Red Alert (SMS/Call to Guru)
+    print(f"🚨 SECURITY INCIDENT SUSPECTED: {request.description}")
+    print(f"📱 TRIGGERING INTERNAL RED ALERT: SMS sent to Guru (+91-9999999999).")
+    print(f"⚠️ 6-Hour Countdown Started. ACTION REQUIRED: Verify False Positive or Click 'Escalate to CERT-In'.")
     
     return {
-        "message": "Incident Declared", 
+        "message": "Incident Logged - Internal Alert Triggered", 
+        "status": "PENDING_INTERNAL_REVIEW",
         "deadline": deadline.isoformat(),
-        "deadline_hours": 72
+        "action_required": "Verify and Manually Escalate if Semantic"
     }
 
 @app.get("/tasks/{task_id}")
@@ -440,6 +473,181 @@ async def process_approval(id: int, status: str, approver: str, db: AsyncSession
         print(f"✅ ACTION AUTHORIZED: {approval.action_type} execution triggered by {approver}.")
     
     return {"id": id, "status": status}
+
+from database import get_db, get_compliance_db, engine_app, engine_compliance, Base, BaseCompliance
+from datetime import datetime, timedelta
+
+# --- MIGRATION ON STARTUP ---
+@app.on_event("startup")
+async def startup():
+    # Initialise both databases
+    async with engine_app.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    async with engine_compliance.begin() as conn:
+        await conn.run_sync(BaseCompliance.metadata.create_all)
+
+# --- STRICT COMPLIANCE DEPENDENCIES ---
+async def verify_admin_mfa(x_mfa_token: str = Header(None)):
+    """
+    Enforces Multi-Factor Authentication for Sensitive Ops.
+    In prod, check this token against TOTP/Authenticator service.
+    """
+    if not x_mfa_token:
+        # For Demo, we accept '123456' as the MFA key
+        raise HTTPException(status_code=403, detail="MFA_REQUIRED: Missing X-MFA-Token header")
+    if x_mfa_token != "123456":
+         raise HTTPException(status_code=403, detail="INVALID_MFA_TOKEN")
+    return x_mfa_token
+
+async def require_compliance_officer(x_user_email: str = Header(None)):
+    """
+    STRICT RBAC: Only Guru and Durga are allowed access.
+    """
+    ALLOWED_OFFICERS = ["guru@compliancedesk.ai", "durga@compliancedesk.ai"]
+    
+    if not x_user_email or x_user_email.lower() not in ALLOWED_OFFICERS:
+        raise HTTPException(status_code=403, detail="ACCESS_DENIED: User not authorized for Compliance Assets.")
+    return x_user_email
+
+# --- COMPLIANCE ENDPOINTS ---
+
+@app.post("/niti/chat")
+async def niti_chat(request: dict, db: AsyncSession = Depends(get_compliance_db)):
+    """
+    Niti AI Assistant Chat Handler with Gemini Integration.
+    Writes Audit Logs to SEPARATE Compliance Database.
+    """
+    import os
+    import google.generativeai as genai
+    
+    user_query = request.get("query", "").lower()
+    user_id = request.get("user_id", "guest")
+    
+    # Static Rules First (Speed & Determinism)
+    response = {
+        "text": "",
+        "action": None
+    }
+    
+    if "dpdp" in user_query and "consent" in user_query:
+        response["text"] = "The Digital Personal Data Protection (DPDP) Act 2023 mandates explicit consent. I can help you sign the form now."
+        response["action"] = "SHOW_DPDP_FORM"
+    elif "pricing" in user_query:
+        response["text"] = "We offer flexible plans starting at ₹99/check. Check out our Pricing section for more details."
+        response["action"] = "SCROLL_PRICING"
+    elif "verify" in user_query and "options" in user_query:
+         response["text"] = "I can help you verify an identity. We support Individual (KYC) and Business (KYB) verification."
+         response["action"] = "SHOW_VERIFY_OPTIONS"
+    
+    # Fallback to Gemini AI if no static rule matches
+    if not response["text"]:
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if api_key:
+            try:
+                genai.configure(api_key=api_key)
+                model = genai.GenerativeModel('gemini-pro')
+                
+                # Contextualize the AI
+                system_prompt = (
+                    "You are Niti, the AI Compliance Assistant for ComplianceDesk.ai. "
+                    "You are helpful, professional, and knowledgeable about Indian Identity Verification, "
+                    "DPDP Act 2023, and Forensic Checks. Keep answers concise (under 50 words)."
+                    "User Query: "
+                )
+                
+                chat_response = model.generate_content(system_prompt + user_query)
+                response["text"] = chat_response.text
+            except Exception as e:
+                print(f"Gemini Error: {e}")
+                response["text"] = "I'm having trouble connecting to my knowledge base right now. Please try again later."
+        else:
+            response["text"] = "I'm still learning (Gemini API Key missing). Please ask about 'Pricing', 'DPDP', or 'Verification'."
+
+    # Audit Log for Interaction -> WRITTEN TO COMPLIANCE_VAULT.DB
+    audit = AuditLog(
+        actor_id=user_id,
+        action="NITI_QUERY",
+        resource_id="GEMINI" if not response["action"] else "STATIC_RULE",
+        ip_address="127.0.0.1",
+        retention_until=datetime.utcnow() + timedelta(days=365*5) # 5 Year Retention
+    )
+    db.add(audit)
+    await db.commit()
+    
+    return response
+
+@app.post("/dpdp/sign")
+async def sign_dpdp_consent(request: dict, db: AsyncSession = Depends(get_compliance_db)):
+    """
+    Digital Signature Handler -> WRITTEN TO COMPLIANCE_VAULT.DB
+    """
+    import hashlib
+    user_id = request.get("user_id")
+    signature_data = request.get("signature") # Base64
+    
+    if not user_id or not signature_data:
+        raise HTTPException(status_code=400, detail="Missing signature data")
+        
+    # Create Form Hash (Immutable Proof)
+    form_content = "Standard DPDP Consent Form v1.0"
+    form_hash = hashlib.sha256(form_content.encode()).hexdigest()
+    
+    consent = DPDPConsent(
+        user_id=user_id,
+        form_hash=form_hash,
+        signature_base64=signature_data,
+        ip_address="127.0.0.1",
+        retention_until=datetime.utcnow() + timedelta(days=365*5) # 5 Year Retention
+    )
+    db.add(consent)
+    
+    # Audit Log -> WRITTEN TO COMPLIANCE_VAULT.DB
+    audit = AuditLog(
+        actor_id=user_id,
+        action="CONSENT_SIGNED",
+        resource_id=str(consent.form_hash)[:8],
+        ip_address="127.0.0.1",
+        retention_until=datetime.utcnow() + timedelta(days=365*5) # 5 Year Retention
+    )
+    db.add(audit)
+    
+    await db.commit()
+    
+    return {"status": "success", "message": "Consent Recorded in Compliance Vault", "hash": form_hash}
+
+# --- SECURE ADMIN ACCESS (MFA + RBAC) ---
+@app.get("/admin/audit-logs")
+async def get_audit_logs(
+    db: AsyncSession = Depends(get_compliance_db),
+    officer: str = Depends(require_compliance_officer),
+    mfa: str = Depends(verify_admin_mfa)
+):
+    """
+    Restricted Access: Only for Compliance Officers with MFA.
+    """
+    result = await db.execute(select(AuditLog).order_by(AuditLog.timestamp.desc()).limit(50))
+    logs = result.scalars().all()
+    return logs
+
+
+# --- TOOLS & UTILITIES ---
+
+class ParseRequest(BaseModel):
+    raw_text: str
+
+@app.post("/tools/smart-parse")
+async def smart_parse_ocr(request: ParseRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Uses Gemini Pro to clean and structure raw OCR text.
+    Useful for cleaning Google Vision output.
+    """
+    from services.gemini_parser import GeminiParserService
+    
+    result = GeminiParserService.parse_id_card(request.raw_text)
+    return result
+
+
 
 @app.get("/")
 async def root():

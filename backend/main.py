@@ -12,7 +12,7 @@ wsgi_app = ASGIMiddleware(fastapi_app)
 @https_fn.on_request(
     memory=options.MemoryOption.GB_1,
     timeout_sec=300,
-    region="us-central1",
+    region="asia-south1",
 )
 def api(req: https_fn.Request) -> https_fn.Response:
     # Validate request type - it should be a Flask/Werkzeug request

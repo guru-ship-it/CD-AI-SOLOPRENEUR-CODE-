@@ -2,33 +2,31 @@ import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 
-# Database URL from environment or default (Fallback to SQLite for demo)
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./compliance.db")
+# --- APPLICATION DATABASE (Operational Data) ---
+# Use /tmp/ for Firebase Cloud Functions (Read-Only FS)
+DATABASE_URL_APP = os.getenv("DATABASE_URL_APP", "sqlite+aiosqlite:////tmp/main.db")
 
-# engine = create_async_engine(
-#     DATABASE_URL,
-#     echo=False,
-#     pool_size=10,
-#     max_overflow=20
-# )
-
-# SQLite doesn't support pool_size/max_overflow the same way
-if "sqlite" in DATABASE_URL:
-    engine = create_async_engine(DATABASE_URL, echo=False)
-else:
-    engine = create_async_engine(
-        DATABASE_URL,
-        echo=False,
-        pool_size=10,
-        max_overflow=20
-    )
-
-SessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
-
+engine_app = create_async_engine(DATABASE_URL_APP, echo=False)
+SessionLocalApp = async_sessionmaker(bind=engine_app, class_=AsyncSession, expire_on_commit=False)
 
 class Base(DeclarativeBase):
     pass
 
 async def get_db():
-    async with SessionLocal() as session:
+    async with SessionLocalApp() as session:
         yield session
+
+# --- COMPLIANCE VAULT (Strict Retention - Audit Logs & Consents) ---
+# Physically separate database file
+DATABASE_URL_COMPLIANCE = os.getenv("DATABASE_URL_COMPLIANCE", "sqlite+aiosqlite:////tmp/compliance_vault.db")
+
+engine_compliance = create_async_engine(DATABASE_URL_COMPLIANCE, echo=False)
+SessionLocalCompliance = async_sessionmaker(bind=engine_compliance, class_=AsyncSession, expire_on_commit=False)
+
+class BaseCompliance(DeclarativeBase):
+    pass
+
+async def get_compliance_db():
+    async with SessionLocalCompliance() as session:
+        yield session
+

@@ -25,4 +25,5 @@ firebase-functions
 firebase-admin
 a2wsgi
 google-cloud-videointelligence
+google-generativeai
 aiosqlite
