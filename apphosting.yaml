@@ -1,0 +1,11 @@
+# Firebase App Hosting Configuration
+runtime: python311
+
+env:
+  - variable: PORT
+    value: 8080
+
+# Explicitly signal Docker-based build if necessary
+# and ensure the build context is correct.
+# Note: App Hosting typically looks for Dockerfile in the source root
+# or a specified directory.

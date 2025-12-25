@@ -1,5 +1,4 @@
 # --- BASE STAGE ---
-# Switching from slim to full python to ensure all system libs (OpenCV, Playwright) are present
 FROM python:3.11 AS base
 
 WORKDIR /app
@@ -10,7 +9,7 @@ RUN apt-get update && apt-get install -y \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements from backend/ (Build context is project root)
+# Copy requirements
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -21,20 +20,17 @@ RUN playwright install-deps
 # Copy backend code
 COPY backend/ .
 
-# Give execution permissions to run.sh
-RUN chmod +x run.sh
-
 # Set environment variables
 ENV PYTHONPATH=/app
-ENV REDIS_HOST=localhost
-ENV REDIS_PORT=6379
-
-# --- API STAGE ---
-FROM base AS api
-EXPOSE 8080
-# Use run.sh for hyper-verbose boot logging
-CMD ["./run.sh"]
+ENV PORT=8080
 
 # --- WORKER STAGE ---
+# Defined before API so API is the default final stage
 FROM base AS worker
 CMD ["celery", "-A", "tasks", "worker", "--loglevel=info"]
+
+# --- API STAGE (DEFAULT) ---
+FROM base AS api
+EXPOSE 8080
+# Use exec to ensure signals are handled correctly
+CMD exec uvicorn app:app --host 0.0.0.0 --port ${PORT} --log-level debug --access-log --workers 1
