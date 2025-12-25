@@ -1,28 +1,36 @@
-# Use official Python runtime
-FROM python:3.11-slim
+# --- BASE STAGE ---
+FROM python:3.11-slim AS base
 
-# Set working directory
 WORKDIR /app
 
-# Install system dependencies (if needed later for PDF generation)
-# RUN apt-get update && apt-get install -y ...
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
-COPY requirements.txt .
+# Copy requirements from backend/ (Build context is project root)
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers (Phase 10)
+# Install Playwright
 RUN playwright install chromium
 RUN playwright install-deps
 
-# Copy application code
-COPY . .
+# Copy backend code
+COPY backend/ .
 
-# Set environment variables (Defaults, can be overridden)
+# Set environment variables
+ENV PYTHONPATH=/app
 ENV REDIS_HOST=localhost
 ENV REDIS_PORT=6379
 
-# Entry point is handled by Cloud Run arguments or CMD override
-# Default to API
-# Start application via python to trigger internal boot logic
+# --- API STAGE ---
+FROM base AS api
+EXPOSE 8080
+# Use shell format for environment variable expansion
 CMD uvicorn app:app --host 0.0.0.0 --port ${PORT:-8080}
+
+# --- WORKER STAGE ---
+FROM base AS worker
+CMD ["celery", "-A", "tasks", "worker", "--loglevel=info"]

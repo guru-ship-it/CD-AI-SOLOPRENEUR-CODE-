@@ -2,7 +2,14 @@ from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
 import uuid
 import os
 import shutil
+from firebase_functions.params import SecretParam
 IS_WINDOWS = os.name == "nt"
+
+# Integration with Firebase Secrets for Cloud Run/App Hosting
+try:
+    protean_key = SecretParam('PROTEAN_API_KEY')
+except:
+    protean_key = type('MockSecret', (), {'value': 'PENDING_GST_APPROVAL'})()
 
 def sync_databases():
     """
@@ -64,6 +71,25 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="ComplianceDesk API (Async)")
 print(f"🚀 ComplianceDesk API Started | Environment: {'Windows' if IS_WINDOWS else 'Cloud/Linux'}")
+
+@app.middleware("http")
+async def activation_gatekeeper(request: Request, call_next):
+    # Skip for health checks or if key is approved
+    if request.url.path in ["/", "/ping", "/api/ping", "/favicon.ico"]:
+        return await call_next(request)
+        
+    try:
+        current_key = protean_key.value
+    except:
+        current_key = "PENDING_GST_APPROVAL"
+
+    if current_key == "PENDING_GST_APPROVAL":
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "ComplianceDesk API is Live. Waiting for GST Keys to activate Verification."}
+        )
+    return await call_next(request)
 
 app.add_middleware(
     CORSMiddleware,
