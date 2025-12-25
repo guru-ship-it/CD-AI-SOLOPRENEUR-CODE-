@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
 import uuid
+import os
+IS_WINDOWS = os.name == "nt"
 from pydantic import BaseModel
 # from celery.result import AsyncResult
 # from celery_config import celery_app
@@ -23,6 +25,7 @@ from typing import List, Optional
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="ComplianceDesk API (Async)")
+print(f"🚀 ComplianceDesk API Started | Environment: {'Windows' if IS_WINDOWS else 'Cloud/Linux'}")
 
 app.add_middleware(
     CORSMiddleware,

@@ -7,6 +7,7 @@ import flask
 initialize_app()
 
 # Convert FastAPI (ASGI) to WSGI for compatibility
+app = fastapi_app
 wsgi_app = ASGIMiddleware(fastapi_app)
 
 @https_fn.on_request(
