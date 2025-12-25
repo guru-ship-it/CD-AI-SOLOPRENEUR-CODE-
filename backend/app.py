@@ -1,7 +1,45 @@
 from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
 import uuid
 import os
+import shutil
 IS_WINDOWS = os.name == "nt"
+
+def sync_databases():
+    """
+    Ensures SQLite databases are available in the writable /tmp/ dir on Cloud Run.
+    Called at startup before FastAPI handles requests.
+    """
+    print(f"[BOOT] IS_WINDOWS: {IS_WINDOWS}")
+    if not IS_WINDOWS:
+        try:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            print(f"[BOOT] Base directory: {base_dir}")
+            
+            # Files to sync
+            dbs = ["main.db", "compliance_vault.db"]
+            for db in dbs:
+                src = os.path.join(base_dir, db)
+                dest = os.path.join("/tmp", db)
+                print(f"[BOOT] Checking for {src}...")
+                if os.path.exists(src):
+                    print(f"[BOOT] Found {src} ({os.path.getsize(src)} bytes). Copying to {dest}...")
+                    shutil.copy2(src, dest)
+                else:
+                    print(f"[BOOT] Source {src} not found in container. Initializing {dest}...")
+                    if not os.path.exists(dest):
+                        with open(dest, "a") as f:
+                            pass
+                print(f"[BOOT] Verified {dest} exists: {os.path.exists(dest)}")
+            print("[BOOT] Database synchronization sequence complete.")
+        except Exception as e:
+            print(f"[BOOT] ERROR during database sync: {e}")
+            import traceback
+            traceback.print_exc()
+
+# Trigger sync at boot
+print("--- COMPLIANCEDESK STARTUP ---")
+sync_databases()
+
 from pydantic import BaseModel
 # from celery.result import AsyncResult
 # from celery_config import celery_app
@@ -865,3 +903,10 @@ async def translate_content(request: TranslateRequest, db: AsyncSession = Depend
 @app.get("/")
 async def root():
     return {"message": "ComplianceDesk API is running"}
+
+if __name__ == "__main__":
+    import uvicorn
+    # Respect the PORT assigned by Cloud Run / Firebase
+    port = int(os.environ.get("PORT", 8080))
+    print(f"📡 Starting production server on port {port}...")
+    uvicorn.run(app, host="0.0.0.0", port=port)

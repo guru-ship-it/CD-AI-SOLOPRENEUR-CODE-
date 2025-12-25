@@ -1,0 +1,11 @@
+venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+user_vaults/
+test_output.log
+.git
+.gitignore
+.vscode
+.env

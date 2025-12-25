@@ -24,5 +24,5 @@ ENV REDIS_PORT=6379
 
 # Entry point is handled by Cloud Run arguments or CMD override
 # Default to API
-# Use shell format to allow environment variable expansion for $PORT
+# Start application via python to trigger internal boot logic
 CMD uvicorn app:app --host 0.0.0.0 --port ${PORT:-8080}
