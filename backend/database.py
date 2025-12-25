@@ -4,7 +4,7 @@ from sqlalchemy.orm import DeclarativeBase
 
 # --- APPLICATION DATABASE (Operational Data) ---
 # Use /tmp/ for Firebase Cloud Functions (Read-Only FS)
-DATABASE_URL_APP = os.getenv("DATABASE_URL_APP", "sqlite+aiosqlite:////tmp/main.db")
+DATABASE_URL_APP = os.getenv("DATABASE_URL_APP", "sqlite+aiosqlite:///./main.db")
 
 engine_app = create_async_engine(DATABASE_URL_APP, echo=False)
 SessionLocalApp = async_sessionmaker(bind=engine_app, class_=AsyncSession, expire_on_commit=False)
@@ -18,7 +18,7 @@ async def get_db():
 
 # --- COMPLIANCE VAULT (Strict Retention - Audit Logs & Consents) ---
 # Physically separate database file
-DATABASE_URL_COMPLIANCE = os.getenv("DATABASE_URL_COMPLIANCE", "sqlite+aiosqlite:////tmp/compliance_vault.db")
+DATABASE_URL_COMPLIANCE = os.getenv("DATABASE_URL_COMPLIANCE", "sqlite+aiosqlite:///./compliance_vault.db")
 
 engine_compliance = create_async_engine(DATABASE_URL_COMPLIANCE, echo=False)
 SessionLocalCompliance = async_sessionmaker(bind=engine_compliance, class_=AsyncSession, expire_on_commit=False)

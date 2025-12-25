@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
 import uuid
 from pydantic import BaseModel
 # from celery.result import AsyncResult
@@ -13,7 +13,7 @@ from pydantic import BaseModel
 # from services.pvc_status_checker import PVCStatusChecker
 # from verifiers.pvc_validator import PVCValidator
 from database import get_db, get_compliance_db
-from models import Verification, Grievance, Tenant, Incident, ActionApproval, AuditLog, DPDPConsent
+from models import Verification, Grievance, Tenant, Incident, ActionApproval, AuditLog, DPDPConsent, ComplianceVault, VerifiedReport
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import desc, select
 from fastapi import Depends, Header
@@ -62,10 +62,15 @@ def load_pvc_validator():
     from verifiers.pvc_validator import PVCValidator
     return PVCValidator
 
+def load_niti_wizard():
+    from services.niti_wizard import NitiWizardService
+    return NitiWizardService
+
 police_verifier = LazyProxy(load_police_verifier)
 pvc_app_engine = LazyProxy(load_pvc_engine)
 pvc_status_checker = LazyProxy(load_pvc_checker)
 pvc_validator = LazyProxy(load_pvc_validator)
+niti_wizard = LazyProxy(load_niti_wizard)
 
 # Mock Session State (For Demo Purpose Only)
 # In production, use Redis or DB
@@ -74,8 +79,9 @@ USER_SESSIONS = {}
 class VerificationRequest(BaseModel):
     name: str
     id: str
+    mobile_number: str
     image_url: str
-    country: Optional[str] = "IN" # Default to India
+    country: Optional[str] = "IN" 
 
 class VerificationResponse(BaseModel):
     task_id: str
@@ -112,7 +118,7 @@ class ApprovalRequest(BaseModel):
 class WhatsAppPayload(BaseModel):
     user_id: str
     message: str
-    image_url: str = None
+    image_url: Optional[str] = None
 
 @app.post("/verify")
 async def request_verification(request: VerificationRequest, db: AsyncSession = Depends(get_db)):
@@ -157,6 +163,7 @@ async def request_verification(request: VerificationRequest, db: AsyncSession = 
     verification = Verification(
         task_id=task_id,
         tenant_id=tenant_id,
+        mobile_number=request.mobile_number,
         applicant_name=request.name, # RESTORED: Model updated to support this
         applicant_id=final_id,       # RESTORED
         image_url=request.image_url, # RESTORED
@@ -176,6 +183,24 @@ async def request_verification(request: VerificationRequest, db: AsyncSession = 
         verification.status = "COMPLETED"
         verification.face_verified = True # Simulated Face Match
         verification.face_confidence = "98.5"
+        
+        # --- SYNC TO MASTER DATABASE (VerifiedReport) ---
+        from models import VerifiedReport
+        from datetime import datetime, timedelta
+        
+        # Simulate an expiry date (e.g., 1 year from now)
+        expiry_date = datetime.utcnow() + timedelta(days=365)
+        
+        verified_report = VerifiedReport(
+            mobile_number=request.mobile_number,
+            applicant_name=request.name,
+            id_type="AADHAAR", # In real scenario, get from request
+            id_number=final_id,
+            pdf_path=f"/tmp/contract_{final_id}.pdf",
+            expiry_date=expiry_date,
+            tenant_id=tenant_id
+        )
+        db.add(verified_report)
     else:
         verification.status = "FAILED"
         verification.failure_reason = truth_resp.get("message", "Identity Verification Failed")
@@ -199,122 +224,87 @@ async def request_verification(request: VerificationRequest, db: AsyncSession = 
     }
 
 @app.post("/whatsapp/hook")
-async def whatsapp_webhook(payload: WhatsAppPayload):
+async def whatsapp_webhook(request: Request, background_tasks: BackgroundTasks, db_compliance: AsyncSession = Depends(get_compliance_db)):
     """
-    Simulates a WhatsApp Webhook for Police Verification Flow.
+    The Master Gatekeeper for WhatsApp (Interakt Integration)
     """
-    user_id = payload.user_id
-    msg = payload.message.strip().upper()
+    payload = await request.json()
     
-    # Get current state or start fresh
-    state = USER_SESSIONS.get(user_id, {}).get("state", "START")
-    context = USER_SESSIONS.get(user_id, {}).get("context", {})
+    # 1. Security & Event Filtering
+    if payload.get('type') != 'message_received':
+        return {"status": "ignored_event"}
 
-    response_text = ""
-    next_state = state
+    data = payload.get('data', {})
+    user_phone = data.get('customer', {}).get('channel_phone_number', '')
+    message_text = data.get('message', {}).get('text', '').strip()
+    msg_upper = message_text.upper()
+    
+    # Clean phone (Extract last 10 digits for DB lookup)
+    clean_phone = user_phone[-10:] if user_phone else ""
+    if not clean_phone:
+        return {"status": "invalid_phone"}
 
-    if state == "START":
-        if "POLICE" in msg:
-            response_text = (
-                "Select your Work Location for Police Verification:\n"
-                "1. Hyderabad (TS)\n"
-                "2. Bangalore (KA)\n"
-                "3. Chennai (TN)\n"
-                "4. Andhra (AP)"
+    # --- 2. CLASH DETECTION (The Registry Check) ---
+    result = await db_compliance.execute(
+        select(VerifiedReport).filter(VerifiedReport.mobile_number.like(f"%{clean_phone}"))
+    )
+    existing_user = result.scalars().first()
+    
+    # Get session/state
+    session = USER_SESSIONS.get(user_phone, {"state": "START", "context": {}})
+    state = session["state"]
+
+    if existing_user and state == "START":
+        from services.interakt import send_interakt_reply, send_support_alert_email
+        
+        if msg_upper == "NITI":
+            # 🛑 PATH A: EXISTING USER - NITI (Redirect to Support)
+            reply_msg = (f"Hello {existing_user.applicant_name}, you are already verified! "
+                         "For changes or support, please contact our helpline: +91-9999999999")
+            background_tasks.add_task(send_interakt_reply, user_phone, reply_msg)
+            
+            background_tasks.add_task(
+                send_support_alert_email, 
+                subject=f"Existing User Contact: {clean_phone}",
+                body=f"User {existing_user.applicant_name} tried to access NITI. Redirected to helpline."
             )
-            next_state = "SELECT_LOCATION"
-        else:
-            response_text = "Welcome to ComplianceDesk. Type 'POLICE' to start Police Verification."
-
-    elif state == "SELECT_LOCATION":
-        state_map = {"1": "TS", "2": "KA", "3": "TN", "4": "AP"}
-        selected_state = state_map.get(msg)
-        
-        if selected_state:
-            context["state_code"] = selected_state
-            # Verify basic eligibility using factory (Strategy Check)
-            try:
-                strategy_info = police_verifier.verify_candidate(selected_state, {})
-                portal_info = strategy_info.get('portal', 'Unknown Portal')
-                
-                response_text = (
-                    f"Selected: {selected_state} ({portal_info}).\n"
-                    "Do you already have a Police Certificate? (YES / NO / APPLIED)"
-                )
-                next_state = "CHECK_EXISTING"
-            except Exception as e:
-                 response_text = f"Error: {str(e)}. Please select again."
-        else:
-            response_text = "Invalid selection. Please reply 1, 2, 3, or 4."
-
-    elif state == "CHECK_EXISTING":
-        if msg == "YES":
-            response_text = "Please upload a photo of your Police Certificate."
-            next_state = "AWAITING_CERT_UPLOAD"
+            return {"status": "redirected_to_support"}
             
-        elif msg == "NO":
-            response_text = (
-                "We will help you apply.\n"
-                "Please send your Full Name to generate the application form."
+        elif "POLICE" in msg_upper:
+            # 🟢 PATH C: PVC UPDATE Logic (Preserving your previous enhancement)
+            from services.individual_vault import IndividualVaultService
+            latest_pvc = IndividualVaultService.get_latest_pvc(user_phone)
+            
+            reply_msg = "👮‍♂️ Welcome back. We found an existing PVC record for you.\n\n"
+            if latest_pvc:
+                 reply_msg += f"Last Certificate: {latest_pvc[2]} (Verdict: {latest_pvc[6]})\n\n"
+            
+            reply_msg += (
+                "What would you like to do?\n"
+                "1. UPDATE certificate (Upload New)\n"
+                "2. CHECK STATUS of application\n"
+                "3. RELINK with another location"
             )
-            next_state = "AWAITING_NAME_FOR_APP"
-            
-        elif msg == "APPLIED":
-            response_text = "Please enter your Application/Petition Number."
-            next_state = "AWAITING_APP_ID"
-            
-        else:
-            response_text = "Please reply with YES, NO, or APPLIED."
+            USER_SESSIONS[user_phone] = {"state": "PVC_EXISTING_OPTIONS", "context": {}}
+            background_tasks.add_task(send_interakt_reply, user_phone, reply_msg)
+            return {"status": "pvc_options_sent"}
 
-    elif state == "AWAITING_CERT_UPLOAD":
-        if payload.image_url:
-            # Trigger Validator
-            validation_result = pvc_validator.validate_certificate_image(payload.image_url)
-            
-            verdict = validation_result.get("verdict")
-            details = validation_result.get("data", {})
-            
-            response_text = (
-                f"Certificate Analysis: {verdict}\n"
-                f"Name: {details.get('name', 'N/A')}\n"
-                f"Status: {validation_result.get('state_verified', False)}"
-            )
-            # Reset after completion
-            next_state = "START"
-        else:
-            response_text = "Please upload an image."
+    # --- 3. PATH B: NEW USER OR ACTIVE SESSION ---
+    # Extract optional image URL
+    image_url = None
+    if data.get('message', {}).get('type') == 'Image':
+        image_url = data.get('message', {}).get('attachment', {}).get('url')
 
-    elif state == "AWAITING_NAME_FOR_APP":
-        # Generate Application
-        state_code = context.get("state_code", "TS")
-        user_data = {"name": msg, "id": user_id}
-        
-        result = pvc_app_engine.generate_application(state_code, user_data)
-        
-        response_text = (
-            f"✅ Form Generated: {result.get('file_path')}\n"
-            f"{result.get('instructions')}\n\n"
-            "Once applied, type 'POLICE' again and select 'APPLIED' to track status."
-        )
-        next_state = "START"
+    # Delegate to Background Task for AI/Logic Processing
+    from services.whatsapp_processor import WhatsAppProcessor
+    background_tasks.add_task(
+        WhatsAppProcessor.process_interaction, 
+        user_phone, 
+        message_text, 
+        image_url
+    )
 
-    elif state == "AWAITING_APP_ID":
-        state_code = context.get("state_code", "TS")
-        app_id = msg
-        
-        # Check Status
-        status_result = await pvc_status_checker.check_status(state_code, app_id)
-        
-        response_text = f"👮‍♂️ Current Status for {app_id}:\n{status_result}"
-        next_state = "START"
-
-    # Update Session
-    USER_SESSIONS[user_id] = {"state": next_state, "context": context}
-
-    return {"response": response_text, "next_state": next_state}
-
-    return {"response": response_text, "next_state": next_state}
-
+    return {"status": "processing_started"}
 
 @app.get("/verifications", response_model=List[VerificationResponse])
 async def list_verifications(skip: int = 0, limit: int = 20, db: AsyncSession = Depends(get_db)):
@@ -548,11 +538,22 @@ async def niti_chat(request: dict, db: AsyncSession = Depends(get_compliance_db)
                 genai.configure(api_key=api_key)
                 model = genai.GenerativeModel('gemini-pro')
                 
-                # Contextualize the AI
+                # Contextualize the AI with strict guardrails
                 system_prompt = (
                     "You are Niti, the AI Compliance Assistant for ComplianceDesk.ai. "
-                    "You are helpful, professional, and knowledgeable about Indian Identity Verification, "
-                    "DPDP Act 2023, and Forensic Checks. Keep answers concise (under 50 words)."
+                    "You are an expert on the DPDP Act 2023. Compliance Desk AI is the Data Fiduciary. "
+                    "The Data Protection Officer (DPO) can be reached at dpo@compliancedesk.ai. "
+                    "Users have rights to access, correct, and withdraw consent easily. "
+                    "You are ONLY allowed to answer questions related to: "
+                    "1. Indian Identity Verification (Aadhaar, PAN, etc.) "
+                    "2. DPDP Act 2023 and Data Privacy "
+                    "3. Forensic Checks and Police Verifications "
+                    "4. Compliance Desk AI platform features. "
+                    "If asked about DPDP, explain that we only collect Name, ID numbers, and facial biometrics for the sole purpose of identity verification and fraud prevention. "
+                    "If a user asks a general question, or anything unrelated to these topics, "
+                    "politely explain that you are a specialized compliance assistant and cannot "
+                    "answer general world knowledge or LLM-style creative queries. "
+                    "Keep answers concise (under 50 words)."
                     "User Query: "
                 )
                 
@@ -577,6 +578,46 @@ async def niti_chat(request: dict, db: AsyncSession = Depends(get_compliance_db)
     
     return response
 
+async def tokenize_compliance_pii(db: AsyncSession, pii_value: str) -> str:
+    """
+    FAT 5.1: Vault Pattern for Compliance DB.
+    Checks if PII already exists in vault, returns token.
+    Otherwise creates new token and stores in ComplianceVault.
+    """
+    import json
+    # Use HMAC or consistent hash for demo-level tokenization
+    import hashlib
+    token = f"COMP-VT-{hashlib.sha256(pii_value.encode()).hexdigest()[:16].upper()}"
+    
+    # Check if exists
+    stmt = select(ComplianceVault).filter(ComplianceVault.token == token)
+    result = await db.execute(stmt)
+    if result.scalars().first():
+        return token
+    
+    # Store in Vault
+    entry = ComplianceVault(token=token, pii_json=json.dumps({"raw": pii_value}))
+    db.add(entry)
+    # We don't commit here, let the parent task commit
+    return token
+
+async def detokenize_compliance_pii(db: AsyncSession, token: str) -> str:
+    """
+    FAT 5.1: Vault Pattern - Detokenization.
+    Retrieves raw PII from ComplianceVault.
+    """
+    import json
+    if not token or not token.startswith("COMP-VT-"):
+        return token
+    
+    stmt = select(ComplianceVault).filter(ComplianceVault.token == token)
+    result = await db.execute(stmt)
+    entry = result.scalars().first()
+    if entry:
+        data = json.loads(entry.pii_json)
+        return data.get("raw", token)
+    return token
+
 @app.post("/dpdp/sign")
 async def sign_dpdp_consent(request: dict, db: AsyncSession = Depends(get_compliance_db)):
     """
@@ -589,25 +630,30 @@ async def sign_dpdp_consent(request: dict, db: AsyncSession = Depends(get_compli
     if not user_id or not signature_data:
         raise HTTPException(status_code=400, detail="Missing signature data")
         
-    # Create Form Hash (Immutable Proof)
-    form_content = "Standard DPDP Consent Form v1.0"
+    # Create Form Hash (Immutable Proof of what the user actually saw)
+    form_content = request.get("form_text", "Standard DPDP Consent Form v1.0")
     form_hash = hashlib.sha256(form_content.encode()).hexdigest()
     
+    # Tokenize sensitive fields
+    user_token = await tokenize_compliance_pii(db, user_id)
+    sig_token = await tokenize_compliance_pii(db, signature_data)
+    ip_token = await tokenize_compliance_pii(db, "127.0.0.1")
+
     consent = DPDPConsent(
-        user_id=user_id,
+        user_id_token=user_token,
         form_hash=form_hash,
-        signature_base64=signature_data,
-        ip_address="127.0.0.1",
+        signature_token=sig_token,
+        ip_token=ip_token,
         retention_until=datetime.utcnow() + timedelta(days=365*5) # 5 Year Retention
     )
     db.add(consent)
     
     # Audit Log -> WRITTEN TO COMPLIANCE_VAULT.DB
     audit = AuditLog(
-        actor_id=user_id,
+        actor_token=user_token,
         action="CONSENT_SIGNED",
         resource_id=str(consent.form_hash)[:8],
-        ip_address="127.0.0.1",
+        ip_token=ip_token,
         retention_until=datetime.utcnow() + timedelta(days=365*5) # 5 Year Retention
     )
     db.add(audit)
@@ -628,10 +674,157 @@ async def get_audit_logs(
     """
     result = await db.execute(select(AuditLog).order_by(AuditLog.timestamp.desc()).limit(50))
     logs = result.scalars().all()
-    return logs
+    
+    # Detokenize for Officer View
+    de_logs = []
+    for log in logs:
+        log_dict = {
+            "id": log.id,
+            "action": log.action,
+            "resource_id": log.resource_id,
+            "timestamp": log.timestamp,
+            "actor_id": await detokenize_compliance_pii(db, log.actor_token),
+            "ip_address": await detokenize_compliance_pii(db, log.ip_token)
+        }
+        de_logs.append(log_dict)
+    return de_logs
 
+@app.get("/admin/consents")
+async def get_consents(
+    db: AsyncSession = Depends(get_compliance_db),
+    officer: str = Depends(require_compliance_officer),
+    mfa: str = Depends(verify_admin_mfa)
+):
+    """
+    Restricted Access: View Detokenized Consents.
+    """
+    result = await db.execute(select(DPDPConsent).order_by(DPDPConsent.timestamp.desc()).limit(50))
+    consents = result.scalars().all()
+    
+    de_consents = []
+    for c in consents:
+        de_consents.append({
+            "id": c.id,
+            "user_id": await detokenize_compliance_pii(db, c.user_id_token),
+            "form_hash": c.form_hash,
+            "timestamp": c.timestamp,
+            "ip_address": await detokenize_compliance_pii(db, c.ip_token)
+            # signature_token excluded for extra security, can be added if needed
+        })
+    return de_consents
 
 # --- TOOLS & UTILITIES ---
+
+@app.get("/users/search")
+async def search_users(mobile: str, db: AsyncSession = Depends(get_db)):
+    """
+    Search users using mobile search string approach.
+    Matches documented response format.
+    """
+    result = await db.execute(
+        select(VerifiedReport).filter(VerifiedReport.mobile_number.like(f"%{mobile}%"))
+    )
+    user = result.scalars().first()
+    
+    if user:
+        return {
+            "status": "found",
+            "applicant_name": user.applicant_name,
+            "verified_at": user.created_at.isoformat() if user.created_at else None,
+            "expiry_date": user.expiry_date.isoformat() if user.expiry_date else None,
+            "tenant_owner": f"Tenant_{user.tenant_id}",
+            "registry_id": user.id
+        }
+    
+    return {
+        "status": "not_found",
+        "detail": "User does not exist in the Master Registry."
+    }
+
+@app.get("/admin/expiry-check")
+async def manual_expiry_check(db: AsyncSession = Depends(get_db)):
+    """
+    Manually triggers the expiry notification sweep.
+    In Prod, this runs via a daily cron.
+    """
+    now = datetime.utcnow()
+    day_30 = now + timedelta(days=30)
+    day_15 = now + timedelta(days=15)
+    
+    # 1. Check for 30-day alerts
+    res_30 = await db.execute(
+        select(VerifiedReport).filter(
+            VerifiedReport.expiry_date >= day_30.replace(hour=0, minute=0, second=0),
+            VerifiedReport.expiry_date < (day_30 + timedelta(days=1)).replace(hour=0, minute=0, second=0)
+        )
+    )
+    reports_30 = res_30.scalars().all()
+    
+    # 2. Check for daily alerts (<= 15 days)
+    res_15 = await db.execute(
+        select(VerifiedReport).filter(
+            VerifiedReport.expiry_date <= day_15,
+            VerifiedReport.expiry_date > now
+        )
+    )
+    reports_15 = res_15.scalars().all()
+    
+    notifications_sent = 0
+    from services.interakt import send_interakt_reply, send_support_alert_email
+
+    for r in reports_30:
+        # WhatsApp Template (Scenario 1)
+        wa_msg = (
+            "⚠️ Compliance Alert: Hello! Your verified ID document is expiring in 30 days.\n\n"
+            "Please contact your company Admin to submit a renewal. Staying compliant means staying on the job! ✅"
+        )
+        send_interakt_reply(r.mobile_number, wa_msg)
+
+        # Email Template
+        subject = f"⚠️ Action Needed: Compliance Expiry Alert for {r.applicant_name}"
+        body = (
+            f"Dear Admin,\n\n"
+            f"The following user in your Verified Registry is approaching document expiry:\n\n"
+            f"Name: {r.applicant_name}\n"
+            f"Mobile: {r.mobile_number}\n"
+            f"Document Type: IDENTITY\n"
+            f"Expiry Date: {r.expiry_date}\n"
+            f"Days Remaining: 30\n\n"
+            f"System Action: We have sent a WhatsApp alert to the user. "
+            f"Please coordinate with them to upload the renewed document to avoid service disruption.\n\n"
+            f"This is an automated message from the ComplianceDesk Registry."
+        )
+        send_support_alert_email(subject, body)
+        notifications_sent += 1
+        
+    for r in reports_15:
+        days_left = (r.expiry_date - now).days
+        # WhatsApp Template (Scenario 2)
+        wa_msg = (
+            "🚨 URGENT ACTION REQUIRED\n\n"
+            f"Your ID expires in {days_left} days. If you do not renew this immediately, your verification status will be suspended.\n\n"
+            "📞 Call Helpline: +91-9999999999 📍 Action: Visit your HR/Admin office today."
+        )
+        send_interakt_reply(r.mobile_number, wa_msg)
+
+        # Email Template
+        subject = f"🚨 URGENT: Compliance Expiry for {r.applicant_name}"
+        body = (
+            f"Dear Admin,\n\n"
+            f"The following user in your Verified Registry is approaching document expiry:\n\n"
+            f"Name: {r.applicant_name}\n"
+            f"Mobile: {r.mobile_number}\n"
+            f"Document Type: IDENTITY\n"
+            f"Expiry Date: {r.expiry_date}\n"
+            f"Days Remaining: {days_left}\n\n"
+            f"System Action: We have sent an URGENT WhatsApp alert to the user. "
+            f"Please coordinate with them immediately to avoid service disruption.\n\n"
+            f"This is an automated message from the ComplianceDesk Registry."
+        )
+        send_support_alert_email(subject, body)
+        notifications_sent += 1
+    
+    return {"status": "success", "notifications_sent": notifications_sent}
 
 class ParseRequest(BaseModel):
     raw_text: str

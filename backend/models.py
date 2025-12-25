@@ -8,6 +8,7 @@ class Verification(Base):
     id = Column(Integer, primary_key=True, index=True)
     task_id = Column(String, unique=True, index=True, nullable=False)
     tenant_id = Column(Integer, index=True, nullable=True) # Link to Tenant
+    mobile_number = Column(String, index=True, nullable=True) # Unified Identity Key
     
     # FAT 5.1: Vault Isolation - No naked PII in verifications table
     vault_token = Column(String, unique=True, index=True, nullable=False) 
@@ -107,10 +108,10 @@ class AuditLog(BaseCompliance):
     __tablename__ = "audit_logs"
     
     id = Column(Integer, primary_key=True, index=True)
-    actor_id = Column(String, nullable=False, index=True) # User ID or System
+    actor_token = Column(String, nullable=False, index=True) # Tokenized User ID or System
     action = Column(String, nullable=False) # READ, WRITE, EXPORT, DELETE
     resource_id = Column(String, nullable=True) # ID of the resource accessed
-    ip_address = Column(String, nullable=True)
+    ip_token = Column(String, nullable=True) # Tokenized IP
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
     
     # 5-Year Retention Policy
@@ -120,11 +121,37 @@ class DPDPConsent(BaseCompliance):
     __tablename__ = "dpdp_consents"
     
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, nullable=False, index=True)
+    user_id_token = Column(String, nullable=False, index=True) # Tokenized User ID
     form_hash = Column(String, nullable=False) # Checksum of the agreed terms
-    signature_base64 = Column(String, nullable=False) # Digital Signature representation
+    signature_token = Column(String, nullable=False) # Tokenized Digital Signature
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
-    ip_address = Column(String, nullable=True)
+    ip_token = Column(String, nullable=True) # Tokenized IP
     
     # 5-Year Retention Policy
     retention_until = Column(DateTime(timezone=True), index=True)
+
+class ComplianceVault(BaseCompliance):
+    __tablename__ = "compliance_vault"
+    
+    # FAT 5.1: The physical vault for compliance PII
+    token = Column(String, primary_key=True, index=True)
+    pii_json = Column(String, nullable=False) # Encrypted or raw PII
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class VerifiedReport(Base):
+    __tablename__ = "verified_reports"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    mobile_number = Column(String, index=True, nullable=False)
+    applicant_name = Column(String, nullable=False)
+    id_type = Column(String, nullable=False) # Aadhaar, PAN, etc.
+    id_number = Column(String, nullable=False)
+    pdf_path = Column(String, nullable=True)
+    expiry_date = Column(DateTime(timezone=True), nullable=True, index=True)
+    verified_at = Column(DateTime(timezone=True), server_default=func.now())
+    tenant_id = Column(Integer, index=True, nullable=False)
+    
+    # Notifications log
+    last_notified_at = Column(DateTime(timezone=True), nullable=True)
+
