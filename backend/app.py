@@ -1,89 +1,79 @@
-from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Request, BackgroundTasks, Depends, Header
+from contextlib import asynccontextmanager
 import uuid
 import os
 import shutil
-from firebase_functions.params import SecretParam
-IS_WINDOWS = os.name == "nt"
+import traceback
 
-# Integration with Firebase Secrets for Cloud Run/App Hosting
-try:
-    protean_key = SecretParam('PROTEAN_API_KEY')
-except:
-    protean_key = type('MockSecret', (), {'value': 'PENDING_GST_APPROVAL'})()
+IS_WINDOWS = os.name == "nt"
 
 def sync_databases():
     """
-    Ensures SQLite databases are available in the writable /tmp/ dir on Cloud Run.
-    Called at startup before FastAPI handles requests.
+    Ensures SQLite databases are available in the writable /tmp/ dir.
     """
-    print(f"[BOOT] IS_WINDOWS: {IS_WINDOWS}")
     if not IS_WINDOWS:
         try:
+            print("--- [BOOT] DATABASE SYNC START ---")
             base_dir = os.path.dirname(os.path.abspath(__file__))
-            print(f"[BOOT] Base directory: {base_dir}")
-            
-            # Files to sync
             dbs = ["main.db", "compliance_vault.db"]
             for db in dbs:
                 src = os.path.join(base_dir, db)
                 dest = os.path.join("/tmp", db)
-                print(f"[BOOT] Checking for {src}...")
                 if os.path.exists(src):
-                    print(f"[BOOT] Found {src} ({os.path.getsize(src)} bytes). Copying to {dest}...")
+                    print(f"[BOOT] Copying {src} -> {dest}")
                     shutil.copy2(src, dest)
                 else:
-                    print(f"[BOOT] Source {src} not found in container. Initializing {dest}...")
                     if not os.path.exists(dest):
-                        with open(dest, "a") as f:
-                            pass
-                print(f"[BOOT] Verified {dest} exists: {os.path.exists(dest)}")
-            print("[BOOT] Database synchronization sequence complete.")
+                        with open(dest, "a") as f: pass
+            print("--- [BOOT] DATABASE SYNC OK ---")
         except Exception as e:
-            print(f"[BOOT] ERROR during database sync: {e}")
-            import traceback
+            print(f"[BOOT] DB SYNC FAILED: {e}")
             traceback.print_exc()
 
-# Trigger sync at boot
-print("--- COMPLIANCEDESK STARTUP ---")
-sync_databases()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # This runs BEFORE the app starts listening
+    # But we want to ensure it doesn't hang the whole process
+    print("--- [LIFESPAN] INITIALIZING ---")
+    sync_databases()
+    yield
+    print("--- [LIFESPAN] SHUTDOWN ---")
 
-from pydantic import BaseModel
-# from celery.result import AsyncResult
-# from celery_config import celery_app
-# from tasks import generate_legal_pdf, verify_face_with_vertex
+app = FastAPI(title="ComplianceDesk API (Async)", lifespan=lifespan)
 
+# Global activation status (cached)
+_ACTIVATION_STATUS = None
 
-# PVC Imports
-# PVC Imports (Moved to lazy loaders)
-# from verifiers.factory import PoliceVerifier
-# from services.pvc_application import PVCApplicationEngine
-# from services.pvc_status_checker import PVCStatusChecker
-# from verifiers.pvc_validator import PVCValidator
-from database import get_db, get_compliance_db
-from models import Verification, Grievance, Tenant, Incident, ActionApproval, AuditLog, DPDPConsent, ComplianceVault, VerifiedReport
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import desc, select
-from fastapi import Depends, Header
-from datetime import datetime, timedelta
-from typing import List, Optional
-
-from fastapi.middleware.cors import CORSMiddleware
-
-app = FastAPI(title="ComplianceDesk API (Async)")
-print(f"🚀 ComplianceDesk API Started | Environment: {'Windows' if IS_WINDOWS else 'Cloud/Linux'}")
+def get_activation_key():
+    global _ACTIVATION_STATUS
+    if _ACTIVATION_STATUS:
+        return _ACTIVATION_STATUS
+        
+    # Standard env var (Cloud Run preferred)
+    key = os.environ.get("PROTEAN_API_KEY")
+    if key:
+        _ACTIVATION_STATUS = key
+        return key
+        
+    # Firebase Secret (Function fallback)
+    try:
+        from firebase_functions.params import SecretParam
+        key = SecretParam('PROTEAN_API_KEY').value
+        _ACTIVATION_STATUS = key
+        return key
+    except:
+        return "PENDING_GST_APPROVAL"
 
 @app.middleware("http")
 async def activation_gatekeeper(request: Request, call_next):
-    # Skip for health checks or if key is approved
-    if request.url.path in ["/", "/ping", "/api/ping", "/favicon.ico"]:
+    # IMMUNE Endpoints (Must pass for health checks)
+    immune_paths = ["/", "/ping", "/api/ping", "/health", "/favicon.ico"]
+    if request.url.path in immune_paths:
         return await call_next(request)
         
-    try:
-        current_key = protean_key.value
-    except:
-        current_key = "PENDING_GST_APPROVAL"
-
-    if current_key == "PENDING_GST_APPROVAL":
+    # Check activation
+    key = get_activation_key()
+    if key == "PENDING_GST_APPROVAL":
         from fastapi.responses import JSONResponse
         return JSONResponse(
             status_code=503,
@@ -91,9 +81,23 @@ async def activation_gatekeeper(request: Request, call_next):
         )
     return await call_next(request)
 
+# Health Check Endpoint
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "environment": "Cloud" if not IS_WINDOWS else "Local"}
+
+from database import get_db, get_compliance_db
+from models import Verification, Grievance, Tenant, Incident, ActionApproval, AuditLog, DPDPConsent, ComplianceVault, VerifiedReport
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import desc, select
+from datetime import datetime, timedelta
+from typing import List, Optional
+from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allow Firebase Hosting & Localhost
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
