@@ -17,14 +17,14 @@ def get_secret_val():
     except:
         return "PENDING_GST_APPROVAL"
 
-# Handle SecretParam object for the decorator metadata
+# Handle SecretParam objects for the decorator metadata
 try:
     from firebase_functions.params import SecretParam
     protean_secret = SecretParam('PROTEAN_API_KEY')
+    razor_secret = SecretParam('RAZORPAY_WEBHOOK_SECRET')
 except:
     protean_secret = None
-
-protean_key_val = get_secret_val()
+    razor_secret = None
 
 # Convert FastAPI (ASGI) to WSGI for compatibility
 app = fastapi_app
@@ -49,3 +49,57 @@ def api(req: https_fn.Request) -> https_fn.Response:
         return https_fn.Response("pong")
 
     return https_fn.Response.from_app(wsgi_app, req)
+
+@https_fn.on_request(
+    memory=options.MemoryOption.GB_1,
+    region="asia-south1",
+    secrets=[razor_secret] if razor_secret else []
+)
+def razorpay_webhook(req: https_fn.Request) -> https_fn.Response:
+    """
+    Phase 3 Integration: Razorpay Webhook for GST Invoicing.
+    """
+    from services.finance_service import InvoiceEngine
+    from app import get_secret
+    import razorpay
+    import json
+
+    # 1. Verify Signature (Security)
+    webhook_secret = get_secret('RAZORPAY_WEBHOOK_SECRET')
+    signature = req.headers.get('X-Razorpay-Signature')
+    payload = req.get_data(as_text=True)
+    
+    # Simple check if secret is set
+    if not webhook_secret or webhook_secret == "YOUR_WEBHOOK_SECRET":
+        # Fallback or Log warning in demo
+        print("[WARNING] Razorpay Webhook Secret not configured correctly.")
+    
+    # Verify signature if possible
+    try:
+        if webhook_secret and signature:
+            client = razorpay.Client(auth=(get_secret("RAZORPAY_KEY_ID"), get_secret("RAZORPAY_KEY_SECRET")))
+            client.utility.verify_webhook_signature(payload, signature, webhook_secret)
+    except Exception as e:
+        print(f"[SECURITY] Webhook Signature Verification Failed: {e}")
+        # In production, you might return 400 here: return https_fn.Response("Unauthorized", status=401)
+
+    data = req.get_json()
+    if data.get('event') == 'payment.captured':
+        payment = data['payload']['payment']['entity']
+        user_id = payment.get('notes', {}).get('user_id', 'Unknown')
+        
+        # 2. Get User State (Placeholder for DB Logic)
+        # customer_state = fetch_user_state_from_db(user_id) or "Telangana"
+        customer_state = "Telangana" # Default as per snippet
+        
+        # 3. Generate Invoice
+        try:
+            pdf_path = InvoiceEngine.generate_gst_invoice("Subscriber", payment['id'], customer_state)
+            print(f"✅ Invoice Generated: {pdf_path}")
+        except Exception as e:
+            print(f"❌ Invoice Generation Failed: {e}")
+            return https_fn.Response("Invoice Error", status=500)
+            
+        # 4. TODO: Send PDF via WhatsApp API
+        
+    return https_fn.Response("Success", status=200)

@@ -28,6 +28,16 @@ class WhatsAppProcessor:
                     state = "NITI_START"
                 
                 if state == "NITI_UPLOAD" and image_url:
+                    # Simulation: In real life, trigger Vision API here
+                    mock_ocr_text = "Applicant Address: Flat 402, Sai Residency, Hitech City, Hyderabad, Telangana - 500081"
+                    context["ocr_text"] = mock_ocr_text
+                    
+                    if image_url.startswith("/") or os.name != "nt":
+                        from app import cleanup_local_file
+                        import asyncio
+                        # In background for WhatsApp to return fast
+                        asyncio.create_task(asyncio.to_thread(cleanup_local_file, image_url))
+
                     response_text = (
                         "✅ Document received! Our AI engine is now performing:\n"
                         "1. OCR Extraction\n"
@@ -45,9 +55,10 @@ class WhatsAppProcessor:
                         dpdp_notice = NitiWizardService.DPDP_TEXTS.get(lang)
                         form_hash = hashlib.sha256(dpdp_notice.encode()).hexdigest()
                         
-                        user_token = await tokenize_compliance_pii(db_compliance, user_phone)
-                        sig_token = await tokenize_compliance_pii(db_compliance, "WHATSAPP_DIGITAL_SIGN")
-                        ip_token = await tokenize_compliance_pii(db_compliance, "WHATSAPP_GATEWAY_IP")
+                        from services.security_utils import SecurityUtils
+                        user_token = SecurityUtils.encrypt_pii(user_phone)
+                        sig_token = SecurityUtils.encrypt_pii("WHATSAPP_DIGITAL_SIGN")
+                        ip_token = SecurityUtils.encrypt_pii("WHATSAPP_GATEWAY_IP")
                         
                         consent = DPDPConsent(
                             user_id_token=user_token,
@@ -138,3 +149,15 @@ class WhatsAppProcessor:
             # Send Reply
             if response_text:
                 send_interakt_reply(user_phone, response_text)
+
+    @staticmethod
+    def send_invoice(user_phone: str, pdf_path: str):
+        """
+        Sends a generated GST invoice to the user via WhatsApp.
+        """
+        from services.interakt import send_interakt_document
+        filename = os.path.basename(pdf_path)
+        # In production, we'd upload to Storage and get a public URL
+        # For now, we simulate with the local path or a mock URL
+        document_url = f"https://api.compliancedesk.ai/docs/{filename}" 
+        send_interakt_document(user_phone, document_url, filename)

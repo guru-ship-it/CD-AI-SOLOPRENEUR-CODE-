@@ -22,8 +22,12 @@ playwright
 opencv-python-headless
 
 firebase-functions
-firebase-admin
+firebase-admin==6.2.0
 a2wsgi
 google-cloud-videointelligence
 google-generativeai
 aiosqlite
+razorpay==1.3.0
+reportlab==4.0.0
+pandas
+openpyxl

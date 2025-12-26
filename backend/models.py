@@ -155,3 +155,27 @@ class VerifiedReport(Base):
     # Notifications log
     last_notified_at = Column(DateTime(timezone=True), nullable=True)
 
+class SalesRegister(Base):
+    __tablename__ = "sales_register"
+
+    id = Column(Integer, primary_key=True, index=True)
+    order_id = Column(String, index=True, nullable=False)
+    payment_id = Column(String, unique=True, index=True, nullable=False)
+    mobile_number = Column(String, index=True, nullable=False)
+    customer_name = Column(String, nullable=False)
+    state_code = Column(String, index=True, nullable=False) # e.g., "36" for Telangana
+    place_of_supply = Column(String, nullable=False) # e.g., "Telangana"
+    
+    total_amount = Column(String, nullable=False) # Store as string "99.00"
+    base_amount = Column(String, nullable=False) # Store as string "83.90"
+    gst_amount = Column(String, nullable=False) # Store as string "15.10"
+    
+    cgst = Column(String, nullable=True) # "7.55"
+    sgst = Column(String, nullable=True) # "7.55"
+    igst = Column(String, nullable=True) # "15.10"
+    
+    tax_type = Column(String, nullable=False) # "Intra-State" or "Inter-State"
+    pdf_path = Column(String, nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+

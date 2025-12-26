@@ -43,27 +43,56 @@ def sync_databases():
             traceback.print_exc()
 
 _ACTIVATION_STATUS = None
+def get_secret(secret_name: str, default: str = None) -> str:
+    """
+    Unified helper to fetch secrets from Env or Secret Manager.
+    """
+    key = os.environ.get(secret_name)
+    if key: return key
+    try:
+        from firebase_functions.params import SecretParam
+        return SecretParam(secret_name).value
+    except:
+        return default
+
 def get_activation_key():
     global _ACTIVATION_STATUS
     if _ACTIVATION_STATUS: return _ACTIVATION_STATUS
-    key = os.environ.get("PROTEAN_API_KEY")
-    if key: _ACTIVATION_STATUS = key; return key
-    try:
-        from firebase_functions.params import SecretParam
-        key = SecretParam('PROTEAN_API_KEY').value
-        _ACTIVATION_STATUS = key
-        return key
-    except: return "PENDING_GST_APPROVAL"
+    key = get_secret("PROTEAN_API_KEY", "PENDING_GST_APPROVAL")
+    _ACTIVATION_STATUS = key
+    return key
 
 @app.middleware("http")
 async def activation_gatekeeper(request: Request, call_next):
-    immune_paths = ["/", "/ping", "/api/ping", "/health", "/favicon.ico"]
+    immune_paths = ["/", "/ping", "/api/ping", "/health", "/favicon.ico", "/privacy-policy"]
     if request.url.path in immune_paths: return await call_next(request)
     key = get_activation_key()
     if key == "PENDING_GST_APPROVAL":
         from fastapi.responses import JSONResponse
         return JSONResponse(status_code=503, content={"detail": "ComplianceDesk API is Live. Waiting for GST Keys to activate Verification."})
     return await call_next(request)
+
+def cleanup_local_file(file_path: str):
+    """
+    FAT 5.1: Empty Vault - Purges raw documents after processing.
+    """
+    try:
+        if file_path and os.path.exists(file_path):
+            os.remove(file_path)
+            print(f"[SECURITY] Purged raw document: {file_path}")
+    except Exception as e:
+        print(f"[SECURITY] Cleanup Failed: {e}")
+
+@app.get("/privacy-policy")
+async def privacy_policy():
+    from fastapi.responses import HTMLResponse
+    content = """
+    <html><body>
+    <h1>Privacy Policy - ComplianceDesk AI</h1>
+    <p>We adhere to the DPDP Act 2023. All ID documents are processed via an 'Empty Vault' architecture and purged immediately after verification.</p>
+    </body></html>
+    """
+    return HTMLResponse(content=content)
 
 class LazyProxy:
     def __init__(self, import_func):
@@ -128,9 +157,13 @@ async def request_verification(request: VerificationRequest, db = Depends(get_db
     task_id = str(uuid.uuid4())
     vault_token = f"VT-{uuid.uuid4().hex[:12].upper()}"
 
+    # FAT 5.1: Tokenize ID before persistence
+    from services.security_utils import SecurityUtils
+    tokenized_id = SecurityUtils.encrypt_pii(request.id)
+
     verification = Verification(
         task_id=task_id, tenant_id=tenant_id, mobile_number=request.mobile_number,
-        applicant_name=request.name, applicant_id=request.id, image_url=request.image_url,
+        applicant_name=request.name, applicant_id=tokenized_id, image_url=request.image_url,
         vault_token=vault_token, status="PROCESSING"
     )
     db.add(verification)
@@ -144,7 +177,7 @@ async def request_verification(request: VerificationRequest, db = Depends(get_db
         expiry_date = datetime.utcnow() + timedelta(days=365)
         verified_report = VerifiedReport(
             mobile_number=request.mobile_number, applicant_name=request.name,
-            id_type="AADHAAR", id_number=request.id, pdf_path=f"/tmp/contract_{request.id}.pdf",
+            id_type="AADHAAR", id_number=tokenized_id, pdf_path=f"/tmp/contract_{request.id}.pdf",
             expiry_date=expiry_date, tenant_id=tenant_id
         )
         db.add(verified_report)
@@ -153,6 +186,10 @@ async def request_verification(request: VerificationRequest, db = Depends(get_db
         verification.failure_reason = truth_resp.get("message", "Identity Verification Failed")
     
     await db.commit()
+
+    # FAT 5.1: Empty Vault - Purge local image if applicable
+    background_tasks.add_task(cleanup_local_file, request.image_url)
+
     return {"message": "Verification processing started", "task_id": task_id}
 
 @app.post("/whatsapp/hook")
@@ -180,6 +217,74 @@ async def whatsapp_webhook(request: Request, background_tasks: BackgroundTasks, 
 
     background_tasks.add_task(WhatsAppProcessor.process_interaction, user_phone, message_text, image_url)
     return {"status": "processing"}
+
+@app.post("/razorpay/webhook")
+async def razorpay_webhook(request: Request, background_tasks: BackgroundTasks, db = Depends(get_db_async)):
+    from services.finance_service import GSTCalculator, InvoiceService
+    from models import SalesRegister
+    import json
+
+    payload = await request.body()
+    data = json.loads(payload)
+    
+    if data.get("event") != "payment.captured":
+        return {"status": "ignored"}
+
+    payment = data["payload"]["payment"]["entity"]
+    amount = payment["amount"] / 100 # In INR
+    payment_id = payment["id"]
+    order_id = payment.get("order_id", "N/A")
+    mobile = payment.get("contact", "")
+    email = payment.get("email", "")
+    
+    # Place of Supply Detection
+    customer_state_name = "Telangana" # Default
+    clean_phone = mobile[-10:] if mobile else ""
+    from app import USER_SESSIONS
+    session = USER_SESSIONS.get(clean_phone)
+    if session and session.get("context", {}).get("ocr_text"):
+        customer_state_name = GSTCalculator.detect_state_from_ocr(session["context"]["ocr_text"])
+    
+    # FAT 5.1: Tokenize PII before persistence
+    from services.security_utils import SecurityUtils
+    tokenized_mobile = SecurityUtils.encrypt_pii(mobile)
+    tokenized_name = SecurityUtils.encrypt_pii(email.split("@")[0] if email else "Customer")
+
+    gst_data = GSTCalculator.calculate_gst(customer_state_name)
+    gst_data.update({
+        "payment_id": payment_id,
+        "order_id": order_id,
+        "customer_name": tokenized_name,
+        "mobile_number": tokenized_mobile
+    })
+
+    pdf_path = InvoiceService.generate_pdf_invoice(gst_data)
+    
+    # Save to Sales Register
+    register_entry = SalesRegister(
+        order_id=order_id,
+        payment_id=payment_id,
+        mobile_number=tokenized_mobile,
+        customer_name=tokenized_name,
+        state_code=gst_data["state_code"],
+        place_of_supply=gst_data["state_name"],
+        total_amount=str(gst_data["total"]),
+        base_amount=str(gst_data["base_price"]),
+        gst_amount=str(gst_data["gst_total"]),
+        cgst=str(gst_data["cgst"]),
+        sgst=str(gst_data["sgst"]),
+        igst=str(gst_data["igst"]),
+        tax_type=gst_data["tax_type"],
+        pdf_path=pdf_path
+    )
+    db.add(register_entry)
+    await db.commit()
+
+    # WhatsApp the Invoice
+    from services.whatsapp_processor import WhatsAppProcessor
+    background_tasks.add_task(WhatsAppProcessor.send_invoice, mobile, pdf_path)
+
+    return {"status": "success", "invoice": pdf_path}
 
 @app.get("/verifications", response_model=List[VerificationResponse])
 async def list_verifications(skip: int = 0, limit: int = 20, db = Depends(get_db_async)):

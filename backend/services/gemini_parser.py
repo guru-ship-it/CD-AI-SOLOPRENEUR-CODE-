@@ -44,8 +44,13 @@ class GeminiParserService:
             
             # Clean response (sometimes Gemini adds markdown fences)
             clean_text = response.text.strip().replace("```json", "").replace("```", "")
+            structured_data = json.loads(clean_text)
             
-            return json.loads(clean_text)
+            # Additional Logic: State Detection from raw text
+            from services.finance_service import GSTCalculator
+            structured_data["detected_state"] = GSTCalculator.detect_state_from_ocr(raw_text)
+            
+            return structured_data
             
         except Exception as e:
             print(f"Gemini Parser Error: {str(e)}")
