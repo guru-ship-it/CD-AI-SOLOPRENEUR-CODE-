@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import select, extract
 from database import SessionLocalApp
 from models import SalesRegister
-from services.finance_service import ReportingService
+from services.finance_engine import ReportingService
 from services.interakt import send_support_alert_email
 
 async def run_monthly_report():

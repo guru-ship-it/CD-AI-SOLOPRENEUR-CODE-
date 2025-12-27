@@ -335,25 +335,40 @@ export const NitiChatWidget: React.FC = () => {
                 )}
             </AnimatePresence>
 
-            {/* Launcher Button */}
-            <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-full shadow-2xl shadow-emerald-600/40 flex items-center justify-center hover:shadow-emerald-600/60 transition-all relative group border-4 border-white"
-            >
-                {isOpen ? <X size={28} /> : <MessageSquare size={28} />}
+            {/* Launcher Button & Greeting Bubble */}
+            <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+                <AnimatePresence>
+                    {!isOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                            className="bg-white border border-green-100 shadow-xl rounded-t-2xl rounded-bl-2xl p-4 mb-3 max-w-[200px]"
+                        >
+                            <p className="text-sm leading-snug">
+                                <span className="text-green-600 font-bold block mb-1">Namaste! I am Niti.</span>
+                                Need help with compliance?
+                            </p>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
-                {!isOpen && (
-                    <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold"
-                    >
-                        1
-                    </motion.div>
-                )}
-            </motion.button>
+                <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="w-16 h-16 bg-white rounded-full shadow-2xl flex items-center justify-center hover:shadow-green-100/50 transition-all relative group border-4 border-white overflow-hidden"
+                >
+                    <div className="absolute inset-0 bg-green-500 opacity-0 group-hover:opacity-5 transition-opacity" />
+                    {isOpen ? (
+                        <X size={24} className="text-slate-400" />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-slate-50">
+                            <ShieldCheck size={28} className="text-green-600" />
+                        </div>
+                    )}
+                </motion.button>
+            </div>
         </div>
     );
 };

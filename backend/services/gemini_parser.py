@@ -47,8 +47,8 @@ class GeminiParserService:
             structured_data = json.loads(clean_text)
             
             # Additional Logic: State Detection from raw text
-            from services.finance_service import GSTCalculator
-            structured_data["detected_state"] = GSTCalculator.detect_state_from_ocr(raw_text)
+            from services.finance_engine import FinanceEngine
+            structured_data["detected_state"] = FinanceEngine.detect_state_from_ocr(raw_text)
             
             return structured_data
             

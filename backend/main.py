@@ -59,7 +59,8 @@ def razorpay_webhook(req: https_fn.Request) -> https_fn.Response:
     """
     Phase 3 Integration: Razorpay Webhook for GST Invoicing.
     """
-    from services.finance_service import InvoiceEngine
+    from services.invoice_generator import InvoiceGenerator
+    from services.finance_engine import FinanceEngine
     from app import get_secret
     import razorpay
     import json
@@ -81,25 +82,21 @@ def razorpay_webhook(req: https_fn.Request) -> https_fn.Response:
             client.utility.verify_webhook_signature(payload, signature, webhook_secret)
     except Exception as e:
         print(f"[SECURITY] Webhook Signature Verification Failed: {e}")
-        # In production, you might return 400 here: return https_fn.Response("Unauthorized", status=401)
 
     data = req.get_json()
     if data.get('event') == 'payment.captured':
         payment = data['payload']['payment']['entity']
         user_id = payment.get('notes', {}).get('user_id', 'Unknown')
         
-        # 2. Get User State (Placeholder for DB Logic)
-        # customer_state = fetch_user_state_from_db(user_id) or "Telangana"
-        customer_state = "Telangana" # Default as per snippet
+        # 2. Get User State
+        customer_state = "Telangana" # Default
         
-        # 3. Generate Invoice
+        # 3. Generate Invoice using the architected engine
         try:
-            pdf_path = InvoiceEngine.generate_gst_invoice("Subscriber", payment['id'], customer_state)
+            pdf_path = InvoiceGenerator.generate_gst_invoice("Subscriber", payment['id'], customer_state)
             print(f"✅ Invoice Generated: {pdf_path}")
         except Exception as e:
             print(f"❌ Invoice Generation Failed: {e}")
             return https_fn.Response("Invoice Error", status=500)
             
-        # 4. TODO: Send PDF via WhatsApp API
-        
     return https_fn.Response("Success", status=200)

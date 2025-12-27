@@ -89,10 +89,54 @@ async def privacy_policy():
     content = """
     <html><body>
     <h1>Privacy Policy - ComplianceDesk AI</h1>
-    <p>We adhere to the DPDP Act 2023. All ID documents are processed via an 'Empty Vault' architecture and purged immediately after verification.</p>
+    <p><strong>Stateless Architecture:</strong> We adhere to the DPDP Act 2023. Our systems are designed to be stateless regarding PII. All ID documents are processed via an 'Empty Vault' architecture and purged immediately after the final verification report is generated. No raw documents are stored on our servers post-processing.</p>
     </body></html>
     """
     return HTMLResponse(content=content)
+
+@app.get("/terms")
+async def terms_of_service():
+    from fastapi.responses import HTMLResponse
+    content = """
+    <html><body>
+    <h1>Terms of Service</h1>
+    <p><strong>Jurisdiction:</strong> All legal matters are subject to the jurisdiction of Hyderabad, Telangana.</p>
+    <p><strong>Refund Policy:</strong> Due to the instantaneous nature of API-based identity verification, no refunds will be provided once an API trigger is initiated, regardless of the verification outcome.</p>
+    </body></html>
+    """
+    return HTMLResponse(content=content)
+
+# --- 2.1 INFRASTRUCTURE APIs (Silent) ---
+
+@app.post("/api/v1/auth/token")
+async def get_access_token():
+    # OIDC Connect Stub
+    return {"access_token": "stub-token-" + str(uuid.uuid4().hex), "token_type": "Bearer", "expires_in": 3600}
+
+@app.post("/api/v1/auth/revoke")
+async def revoke_token():
+    return {"status": "revoked"}
+
+@app.get("/api/v1/docs/pull/{task_id}")
+async def pull_document(task_id: str, db = Depends(get_db_async)):
+    # SILENT API: Pull document metadata/path
+    from models import Verification
+    from sqlalchemy import select
+    result = await db.execute(select(Verification).filter(Verification.task_id == task_id))
+    v = result.scalars().first()
+    if not v: raise HTTPException(status_code=404, detail="Task not found")
+    return {"task_id": task_id, "document_url": v.image_url, "status": v.status}
+
+@app.get("/api/v1/user/details/{mobile}")
+async def get_user_details(mobile: str, db = Depends(get_db_async)):
+    # SILENT API: Get verified user details
+    from models import VerifiedReport
+    from sqlalchemy import select
+    clean_phone = mobile[-10:]
+    result = await db.execute(select(VerifiedReport).filter(VerifiedReport.mobile_number.like(f"%{clean_phone}")))
+    rep = result.scalars().first()
+    if not rep: raise HTTPException(status_code=404, detail="User not found")
+    return {"name": rep.applicant_name, "id_type": rep.id_type, "verified_at": rep.created_at}
 
 class LazyProxy:
     def __init__(self, import_func):
@@ -118,12 +162,18 @@ def load_pvc_engine(): from services.pvc_application import PVCApplicationEngine
 def load_pvc_checker(): from services.pvc_status_checker import PVCStatusChecker; return PVCStatusChecker
 def load_pvc_validator(): from verifiers.pvc_validator import PVCValidator; return PVCValidator
 def load_niti_wizard(): from services.niti_wizard import NitiWizardService; return NitiWizardService
+def load_protean_service(): import services.protean_service as ps; return ps
+def load_finance_engine(): from services.finance_engine import FinanceEngine; return FinanceEngine
+def load_invoice_generator(): from services.invoice_generator import InvoiceGenerator; return InvoiceGenerator
 
 police_verifier = LazyProxy(load_police_verifier)
 pvc_app_engine = LazyProxy(load_pvc_engine)
 pvc_status_checker = LazyProxy(load_pvc_checker)
 pvc_validator = LazyProxy(load_pvc_validator)
 niti_wizard = LazyProxy(load_niti_wizard)
+protean_service = LazyProxy(load_protean_service)
+finance_engine = LazyProxy(load_finance_engine)
+invoice_generator = LazyProxy(load_invoice_generator)
 
 from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
@@ -242,15 +292,18 @@ async def razorpay_webhook(request: Request, background_tasks: BackgroundTasks, 
     clean_phone = mobile[-10:] if mobile else ""
     from app import USER_SESSIONS
     session = USER_SESSIONS.get(clean_phone)
+    from services.finance_engine import FinanceEngine
+    from services.invoice_generator import InvoiceGenerator
+
     if session and session.get("context", {}).get("ocr_text"):
-        customer_state_name = GSTCalculator.detect_state_from_ocr(session["context"]["ocr_text"])
+        customer_state_name = FinanceEngine.detect_state_from_ocr(session["context"]["ocr_text"])
     
     # FAT 5.1: Tokenize PII before persistence
     from services.security_utils import SecurityUtils
     tokenized_mobile = SecurityUtils.encrypt_pii(mobile)
     tokenized_name = SecurityUtils.encrypt_pii(email.split("@")[0] if email else "Customer")
 
-    gst_data = GSTCalculator.calculate_gst(customer_state_name)
+    gst_data = FinanceEngine.calculate_tax_breakdown(amount, customer_state_name)
     gst_data.update({
         "payment_id": payment_id,
         "order_id": order_id,
@@ -258,7 +311,7 @@ async def razorpay_webhook(request: Request, background_tasks: BackgroundTasks, 
         "mobile_number": tokenized_mobile
     })
 
-    pdf_path = InvoiceService.generate_pdf_invoice(gst_data)
+    pdf_path = InvoiceGenerator.generate_gst_invoice(tokenized_name, payment_id, customer_state_name)
     
     # Save to Sales Register
     register_entry = SalesRegister(
@@ -378,6 +431,117 @@ async def smart_parse_ocr(request: dict):
 async def translate_content(request: dict):
     from services.translation_service import TranslationService
     return TranslationService.translate_text(request.get("text", ""), request.get("source_hint", "Auto"), request.get("target_language", "English"))
+
+@app.post("/api/v1/b2b/verify/{module_id}")
+async def b2b_verify(module_id: str, request: dict, db = Depends(get_db_async)):
+    # Determine Tier and Price
+    tier = "B2B_KYC" if module_id in ["vehicle_rc", "mobile_verify", "epfo_search", "forgery_check"] else "B2B_KYB"
+    price = finance_engine.get_price(tier)
+    
+    tenant_id = request.get("tenant_id", 1) # Default to 1 for demo
+    
+    # FAT 5.1: Billing check - Billed to Corporate Wallet
+    success, res = await finance_engine.check_wallet_balance(db, tenant_id, price)
+    if not success:
+        raise HTTPException(status_code=402, detail=res)
+    
+    try:
+        if module_id == "vehicle_rc":
+            verification_res = protean_service.verify_vehicle_rc(request.get("id", "KA01AB1234"))
+        elif module_id == "mobile_verify":
+            verification_res = protean_service.verify_mobile_status(request.get("id", "9999999999"))
+        elif module_id == "epfo_search":
+            verification_res = protean_service.search_epfo_establishment(request.get("id", "EST123"))
+        elif module_id == "forgery_check":
+            verification_res = protean_service.run_forgery_scan(request.get("image_url", "https://example.com/id.jpg"))
+        elif module_id == "gstin_check":
+            verification_res = protean_service.verify_gstin(request.get("id", "29AAAAA0000A1Z5"))
+        elif module_id == "pull_doc":
+            verification_res = protean_service.pull_digilocker_doc(request.get("task_id", "TASK_999"))
+        else:
+            raise HTTPException(status_code=400, detail="Invalid B2B module requested")
+        
+        # Deduct if successful
+        if verification_res.get("status") == "SUCCESS":
+            await finance_engine.deduct_from_wallet(db, tenant_id, price)
+            print(f"[BILLING] B2B Module {module_id} successful. ₹{price} deducted from Wallet.")
+        
+        # Log to Audit for DPDP Compliance
+        from models import AuditLog
+        from datetime import datetime, timedelta
+        async for db_compliance in get_compliance_db_async():
+            db_compliance.add(AuditLog(
+                actor_token="B2B_ADMIN", # Simple token for demo
+                action=f"B2B_VERIFY_{module_id.upper()}",
+                resource_id=request.get("id", "UNKNOWN"),
+                retention_until=datetime.utcnow() + timedelta(days=1825)
+            ))
+            await db_compliance.commit()
+            
+        return verification_res
+        
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"B2B verification error: {str(e)}")
+
+@app.post("/api/v1/tenant/topup")
+async def tenant_topup(request: dict, db = Depends(get_db_async)):
+    tenant_id = request.get("tenant_id", 1)
+    amount = float(request.get("amount", 0))
+    gstin = request.get("gstin")
+    
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Invalid topup amount")
+    
+    from models import Tenant, SalesRegister
+    from sqlalchemy import select
+    
+    result = await db.execute(select(Tenant).where(Tenant.id == tenant_id))
+    tenant = result.scalar_one_or_none()
+    
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    
+    # Update Balance
+    tenant.wallet_balance += amount
+    
+    # Generate Advance Receipt Entry
+    import uuid
+    transaction_id = str(uuid.uuid4())
+    
+    invoice_path = await invoice_generator.generate_gst_invoice(
+        user_name=tenant.name,
+        transaction_id=transaction_id,
+        customer_state="Telangana", # Default for demo
+        amount=amount,
+        type="ADVANCE_RECEIPT"
+    )
+    
+    tax_info = finance_engine.calculate_tax_breakdown(amount, "Telangana")
+    
+    sales_entry = SalesRegister(
+        order_id=f"TOPUP-{transaction_id[:8].upper()}",
+        payment_id=transaction_id,
+        mobile_number=request.get("mobile", "SYSTEM"),
+        customer_name=tenant.name,
+        state_code=tax_info["state_code"],
+        place_of_supply=tax_info["state_name"],
+        total_amount=str(amount),
+        base_amount=str(tax_info["base_price"]),
+        gst_amount=str(tax_info["gst_total"]),
+        cgst=str(tax_info["cgst"]),
+        sgst=str(tax_info["sgst"]),
+        igst=str(tax_info["igst"]),
+        tax_type=tax_info["tax_type"],
+        invoice_type="ADVANCE_RECEIPT",
+        b2b_gstin=gstin,
+        pdf_path=invoice_path
+    )
+    
+    db.add(sales_entry)
+    await db.commit()
+    
+    return {"status": "SUCCESS", "new_balance": tenant.wallet_balance, "invoice": invoice_path}
 
 # --- 5. INITIALIZATION RUNNER ---
 @app.on_event("startup")

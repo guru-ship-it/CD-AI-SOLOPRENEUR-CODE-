@@ -5,7 +5,6 @@ import type { UserRole } from '../../context/AuthContext';
 import {
     LayoutDashboard,
     Activity,
-    CreditCard,
     ShieldCheck,
     CheckCircle2,
     Settings,
@@ -20,15 +19,6 @@ const IconTenant = () => (
         <path d="M5 21V7L13 3V21" strokeLinecap="round" strokeLinejoin="round" />
         <path d="M13 10V21" />
         <path d="M17 14V21" strokeLinecap="round" />
-    </svg>
-);
-
-const IconAddUser = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <circle cx="12" cy="7" r="4" />
-        <path d="M6 21V19C6 15.6863 8.68629 13 12 13C15.3137 13 18 15.6863 18 19V21" />
-        <path d="M19 10L22 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        <path d="M20.5 8.5V11.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
 );
 
@@ -80,22 +70,16 @@ const NAV_ITEMS: NavItem[] = [
         roles: ['COMPANY_ADMIN']
     },
     {
-        title: 'User Management',
-        href: '/dashboard/users',
-        icon: <IconAddUser />,
-        roles: ['COMPANY_ADMIN']
-    },
-    {
-        title: 'Billing & Usage',
-        href: '/dashboard/billing',
-        icon: <CreditCard className="w-5 h-5" />,
-        roles: ['COMPANY_ADMIN']
-    },
-    {
-        title: 'Identity Verification',
+        title: 'Workforce KYC (Staff/Drivers)',
         href: '/dashboard/verify',
         icon: <ShieldCheck className="w-5 h-5" />,
-        roles: ['MASTER_ADMIN', 'COMPANY_ADMIN']
+        roles: ['COMPANY_ADMIN']
+    },
+    {
+        title: 'Vendor KYB (Business/GST)',
+        href: '/dashboard/vendor-kyb',
+        icon: <CheckCircle2 className="w-5 h-5" />,
+        roles: ['COMPANY_ADMIN']
     }
 ];
 

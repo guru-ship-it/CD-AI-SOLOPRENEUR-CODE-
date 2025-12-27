@@ -1,4 +1,5 @@
-from services.finance_service import InvoiceEngine
+from services.finance_engine import FinanceEngine
+from services.invoice_generator import InvoiceGenerator
 import os
 
 def test_invoice_engine():
@@ -13,10 +14,10 @@ def test_invoice_engine():
     
     for case in test_cases:
         print(f"\nGenerating invoice for {case['name']} in {case['state']}...")
-        tax_info = InvoiceEngine.calculate_tax_breakdown(case['amount'], case['state'])
+        tax_info = FinanceEngine.calculate_tax_breakdown(case['amount'], case['state'])
         print(f"Tax Breakdown: {tax_info}")
         
-        pdf_path = InvoiceEngine.generate_gst_invoice(case['name'], case['id'], case['state'], case['amount'])
+        pdf_path = InvoiceGenerator.generate_gst_invoice(case['name'], case['id'], case['state'], case['amount'])
         print(f"PDF Generated: {pdf_path}")
         
         if os.path.exists(pdf_path):

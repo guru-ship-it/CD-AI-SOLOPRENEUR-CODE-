@@ -53,11 +53,8 @@ class Tenant(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False, unique=True)
     region = Column(String, default="asia-south1") # asia-south1 (India), africa-south1 (South Africa)
-    
-    # DPO Details (POPIA / NDPR)
-    dpo_name = Column(String, nullable=True)
-    dpo_email = Column(String, nullable=True)
-    dpo_phone = Column(String, nullable=True)
+    # B2B Wallet
+    wallet_balance = Column(Integer, default=0) # Balance in INR
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -175,6 +172,8 @@ class SalesRegister(Base):
     igst = Column(String, nullable=True) # "15.10"
     
     tax_type = Column(String, nullable=False) # "Intra-State" or "Inter-State"
+    invoice_type = Column(String, default="RETAIL") # "RETAIL", "ADVANCE_RECEIPT"
+    b2b_gstin = Column(String, nullable=True) # GSTIN for Input Credit
     pdf_path = Column(String, nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())

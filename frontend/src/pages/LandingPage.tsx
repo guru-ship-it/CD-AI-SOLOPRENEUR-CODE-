@@ -106,7 +106,7 @@ export const LandingPage = () => {
 
                     <div className="flex flex-col md:row items-center justify-center gap-5">
                         <button
-                            onClick={() => navigate('/login')}
+                            onClick={() => navigate('/hub')}
                             className="w-full md:w-auto px-8 py-4 bg-[#4285F4] hover:bg-[#3367d6] text-white rounded-xl font-bold transition-all shadow-[0_10px_40px_-10px_rgba(66,133,244,0.4)] flex items-center justify-center gap-2"
                         >
                             Start Free Pilot <ArrowRight className="w-5 h-5" />

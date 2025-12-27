@@ -14,15 +14,76 @@ class WhatsAppProcessor:
             from services.niti_wizard import NitiWizardService
             from services.interakt import send_interakt_reply
             
-            session = USER_SESSIONS.get(user_phone, {"state": "START", "context": {}})
+            session = USER_SESSIONS.get(user_phone, {"state": "START", "context": {}, "role": "PERSONAL"})
             state = session["state"]
             context = session.get("context", {})
+            role = session.get("role", "PERSONAL")
             msg_upper = message_text.upper()
             
             response_text = ""
             next_state = state
+            next_role = role
 
-            # --- NITI FLOW ---
+            # --- TRIGGER: Hi (Individual Menu) ---
+            if msg_upper in ["HI", "HELLO", "START", "NAMASTE"]:
+                next_role = "PERSONAL"
+                next_state = "START"
+                response_text = (
+                    "Namaste! Welcome to **CD-AI Individual Portal**.\n\n"
+                    "I am Niti, your compliance assistant. How can I help you today?\n"
+                    "1. Identity Help (NITI)\n"
+                    "2. Police Verification (POLICE)\n"
+                    "3. My Invoices (BILL)"
+                )
+                USER_SESSIONS[user_phone] = {"state": next_state, "context": context, "role": next_role}
+                send_interakt_reply(user_phone, response_text)
+                return
+
+            # --- TRIGGER: Agent Mode Deep Link (?req_id=) ---
+            if "?REQ_ID=" in msg_upper or msg_upper == "AGENT_MODE":
+                req_id = message_text.split("=")[1] if "=" in message_text else "DEMO_123"
+                next_role = "AGENT"
+                next_state = "AWAITING_AGENT_UPLOAD"
+                context["req_id"] = req_id
+                response_text = (
+                    f"Hi! You are in **Agent Mode** for Request ID: {req_id}.\n\n"
+                    "Please upload the requested document photo now.\n"
+                    "*(Note: This upload is billed to your Employer Wallet)*"
+                )
+                USER_SESSIONS[user_phone] = {"state": next_state, "context": context, "role": next_role}
+                send_interakt_reply(user_phone, response_text)
+                return
+
+            if msg_upper == "PERSONAL_MODE":
+                next_role = "PERSONAL"
+                next_state = "START"
+                response_text = "Welcome back to **Personal Mode**. Type 'HI' for the main menu."
+                USER_SESSIONS[user_phone] = {"state": next_state, "context": context, "role": next_role}
+                send_interakt_reply(user_phone, response_text)
+                return
+
+            # --- AGENT MODE (Upload Only) ---
+            if role == "AGENT":
+                if image_url:
+                    # Simulation: Process agent upload
+                    req_id = context.get("req_id", "UNKNOWN")
+                    # Log to Employer Wallet (Mock)
+                    print(f"[BILLING] Billed 1 credit to Employer Wallet for Req: {req_id}")
+                    
+                    response_text = (
+                        f"✅ Document received for Request {req_id}.\n\n"
+                        "It has been securely uploaded to the **Workforce Vault** for verification.\n\n"
+                        "Type 'PERSONAL_MODE' to exit Agent Mode."
+                    )
+                    next_state = "START"
+                else:
+                    response_text = "You are in **Agent Mode**. Please upload the requested document photo now, or type 'PERSONAL_MODE' to exit."
+                
+                USER_SESSIONS[user_phone] = {"state": next_state, "context": context, "role": role}
+                send_interakt_reply(user_phone, response_text)
+                return
+
+            # --- NITI FLOW (Personal Only) ---
             if state.startswith("NITI_") or msg_upper == "NITI":
                 if state == "START" and msg_upper == "NITI":
                     state = "NITI_START"

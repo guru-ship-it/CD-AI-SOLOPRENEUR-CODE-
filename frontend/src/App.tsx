@@ -7,6 +7,7 @@ import { TenantManager } from './pages/TenantManager';
 import { VerificationTerminal } from './pages/VerificationTerminal';
 import { AnalyticsDashboard } from './pages/AnalyticsDashboard';
 import { Login } from './pages/Login';
+import { Gateway } from './pages/Gateway';
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { useSessionTimeout } from './hooks/useSessionTimeout';
 import { CookieConsent } from './components/ui/CookieConsent';
@@ -26,6 +27,7 @@ const AppContent = () => {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/hub" element={<Gateway onLogin={() => { }} />} />
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="tenants" element={<TenantManager />} />
